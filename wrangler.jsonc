@@ -1,0 +1,7 @@
+{
+  // Configuração do Cloudflare: publica os arquivos desta pasta como site.
+  // O nome precisa ser igual ao do projeto no Cloudflare.
+  "name": "painel-de-os-supabase",
+  "compatibility_date": "2025-09-01",
+  "assets": { "directory": "./" }
+}

@@ -1,0 +1,19 @@
+{
+  "id": "/painel-os-vtm/",
+  "name": "Painel de Manutenção — VTM Mídia",
+  "short_name": "Manutenção VTM",
+  "description": "Painel de ordens de serviço e manutenção dos equipamentos de mídia da VTM: abertura, acompanhamento e encerramento de OS, mapa de telas e dashboard.",
+  "start_url": ".",
+  "scope": ".",
+  "display": "standalone",
+  "orientation": "landscape",
+  "lang": "pt-BR",
+  "dir": "ltr",
+  "background_color": "#14111C",
+  "theme_color": "#1D1926",
+  "categories": ["business", "productivity", "utilities"],
+  "icons": [
+    { "src": "icones/icone-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icones/icone-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+  ]
+}
