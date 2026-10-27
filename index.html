@@ -1598,6 +1598,25 @@
   .colab-chip:has(input:checked){border-color:#D9538F;}
   .colab-chip.oculto{display:none;}
   .tec-linhas{display:flex;flex-direction:column;gap:8px;margin-bottom:10px;}
+  /* v6.4: Clientes e telas */
+  .solic-novo{display:inline-block;margin-left:6px;padding:1px 8px;border-radius:999px;font-size:11px;font-weight:700;background:var(--marcado, #FCE8EC);color:#C2185B;}
+  #clientesOverlay{z-index:75; align-items:flex-start;}   /* abre por cima do Mapa de Telas */
+  #clientesOverlay .modal{height:auto;}
+  #cliNomes{min-height:130px; padding:10px 12px; font:inherit; font-size:14px; line-height:1.5;}
+  .cli-lista{display:flex;flex-direction:column;gap:10px;margin-bottom:12px;max-height:46vh;overflow-y:auto;}
+  .cli-grupo{border:1px solid var(--border);border-radius:var(--r-md);background:var(--panel-alt);padding:10px 12px;}
+  .cli-grupo-topo{display:flex;align-items:center;gap:8px;margin-bottom:6px;}
+  .cli-grupo-topo b{font-size:14px;flex:1;}
+  .cli-grupo-topo small{color:var(--muted);font-size:11.5px;}
+  .cli-local{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:8px;align-items:center;padding:6px 0;border-top:1px solid var(--border);font-size:13px;}
+  .cli-local .cli-onde{display:block;color:var(--muted);font-size:11.5px;}
+  .cli-local.inativo{opacity:.5;}
+  .cli-qtd{font-size:12px;color:var(--muted);white-space:nowrap;}
+  .cli-form{border:1px solid var(--brand-1);border-radius:var(--r-md);padding:12px;margin:10px 0;}
+  .cli-form h3{margin:0 0 10px;font-size:15px;}
+  .cli-ativo{display:flex;align-items:center;gap:8px;font-size:13px;margin:4px 0 8px;}
+  .cli-ativo input{width:auto;}
+  .cli-form-botoes{display:flex;justify-content:flex-end;gap:8px;}
   .tec-linha{display:grid;grid-template-columns:minmax(0,1fr) 150px 44px;gap:8px;align-items:center;}
   .rs-frame{width:100%;height:56vh;border:1px solid var(--border);border-radius:var(--r-md);background:#fff;}
   .rs-envio{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;margin-top:12px;padding:10px 12px;border:1px solid var(--border);border-radius:var(--r-md);background:var(--panel-alt);}
@@ -2114,6 +2133,7 @@
         <select id="mtMes" onchange="renderMapaTelas()" style="display:none;padding:8px 10px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--panel-alt);color:var(--text);font:inherit;font-size:12.5px;"></select>
         <button class="btn" onclick="abrirModoTVMapa()" title="Abrir o mapa no telão (link com #tvmapa no final)">📺 Modo TV</button>
         <button class="btn" id="btnMtEditar" onclick="mtAlternarEdicao()" style="display:none;">✏️ Nomear telas</button>
+        <button class="btn" id="btnMtClientes" onclick="openClientes()" style="display:none;">🏢 Clientes e telas</button>
       </div>
     </div>
 
@@ -2520,6 +2540,45 @@
     <div class="modal-actions">
       <button class="btn" onclick="closeTecnicos()">Cancelar</button>
       <button class="btn primary" onclick="tecSalvar()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="clientesOverlay">
+  <div class="modal cp-modal-form">
+    <h2>🏢 Clientes e telas</h2>
+    <p class="cp-sub">Os clientes e locais do Mapa de Telas e do app Solicitar OS. Cadastre quantas telas tem em cada local e onde fica.</p>
+    <div id="cliLista" class="cli-lista"></div>
+    <button class="btn" id="cliBtnNovo" onclick="cliNovo('')">＋ Cadastrar cliente ou local</button>
+    <div id="cliForm" class="cli-form" style="display:none;">
+      <h3 id="cliFormTitulo">Novo local</h3>
+      <div class="row2">
+        <div class="field"><label for="cliGrupo">Cliente</label>
+          <input type="text" id="cliGrupo" list="cliListaGrupos" placeholder="Ex.: Coema, Body Tech" oninput="cliSugereTipo()"></div>
+        <div class="field"><label for="cliTipo">Tipo</label>
+          <input type="text" id="cliTipo" list="cliListaTipos" placeholder="Ex.: Supermercado, Academia"></div>
+      </div>
+      <div class="row2">
+        <div class="field"><label for="cliLocal">Local</label>
+          <input type="text" id="cliLocal" placeholder="Ex.: Torquato 02"></div>
+        <div class="field"><label for="cliQtd">Quantas telas</label>
+          <input type="number" id="cliQtd" min="1" max="60" value="1" oninput="cliAjustaNomes()"></div>
+      </div>
+      <div class="field"><label for="cliOnde">Localização</label>
+        <input type="text" id="cliOnde" placeholder="Endereço ou ponto de referência. Ex.: em frente à Bemol"></div>
+      <div class="field"><label for="cliNomes">Nome de cada tela (opcional, uma por linha)</label>
+        <textarea id="cliNomes" rows="4" placeholder="Ex.:&#10;Telão 3x2 — esquerda&#10;Telão 3x2 — direita&#10;Tela principal 6x2"></textarea></div>
+      <label class="cli-ativo"><input type="checkbox" id="cliAtivo" checked> Mostrar no Mapa de Telas e no app</label>
+      <div class="cp-erro" id="cliErro" role="alert"></div>
+      <div class="cli-form-botoes">
+        <button class="btn" onclick="cliFecharForm()">Cancelar</button>
+        <button class="btn primary" id="cliBtnSalvar" onclick="cliSalvar()">Salvar</button>
+      </div>
+    </div>
+    <datalist id="cliListaGrupos"></datalist>
+    <datalist id="cliListaTipos"></datalist>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeClientes()">Fechar</button>
     </div>
   </div>
 </div>
@@ -3145,7 +3204,7 @@ const EMPRESA = {
    ao lado do título, então dá para conferir num relance se o
    aparelho está com a última cópia ou com uma antiga em cache.
    ============================================================ */
-const VERSAO_PAINEL = '6.3';
+const VERSAO_PAINEL = '6.5';
 const VERSAO_DATA = '27/10/2026';
 let buscaDigitada = false;   // v5.06: ver render()
 
@@ -3592,6 +3651,9 @@ async function sbLerEstado(){
   est.destinatarios = { emails: cfg.avisos_emails || [], telefones: cfg.avisos_telefones || [], tecnicos: cfg.avisos_tecnicos || [] };
   est.telasInfo = cfg.telas_info || {};
   est.userSlots = {};
+  // v6.4: clientes e telas do banco (se a tabela ainda não existe, fica a lista do código)
+  try{ mapaLocaisLinhas = await _sbTudo('mapa_locais', '*', ['ordem', 'id']); aplicarMapaDoBanco(mapaLocaisLinhas); }
+  catch(e){ mapaLocaisLinhas = null; }
   if(versao !== null) sbUltimaVersaoLida = versao;
   return est;
 }
@@ -3733,7 +3795,7 @@ function usuarioAbreOsDireto(){ return !!(currentUser && currentUser.abreOsDiret
 
 let isModalOpen = false;
 function anyModalOpen(){
-  return ['overlay','codeOverlay','boasVindasOverlay','solicitarOSOverlay','reportFilterOverlay','vistoriaOverlay','cadastroOverlay','rotaOverlay','solicitacoesOverlay','mtRenOverlay','logOverlay','destinatariosOverlay','relSemOverlay','relSemAtvOverlay','tecnicosOverlay'].some(id=>{
+  return ['overlay','codeOverlay','boasVindasOverlay','solicitarOSOverlay','reportFilterOverlay','vistoriaOverlay','cadastroOverlay','rotaOverlay','solicitacoesOverlay','mtRenOverlay','logOverlay','destinatariosOverlay','relSemOverlay','relSemAtvOverlay','tecnicosOverlay','clientesOverlay'].some(id=>{
     const el = document.getElementById(id);
     return el && el.classList.contains('show');
   });
@@ -7279,7 +7341,12 @@ function renderListaSolicitacoes(){
     const cabecalho = ehEncerramento
       ? '<div class="solic-linha"><b>OS</b>' + escVist(s.osCode||'') + (s.local ? ' · ' + escVist(s.local) : '') + '</div>' +
         '<div class="solic-linha"><b>Serviço concluído em</b>' + dataFmt + '</div>'
-      : '<div class="solic-linha"><b>Local</b>' + escVist(s.local || '—') + '</div>' +
+      : (s.origemPerfil === 'app' && s.empresa ? '<div class="solic-linha"><b>Cliente</b>' + escVist(s.empresa) +
+          (s.clienteNovo ? ' <span class="solic-novo">🆕 cliente novo</span>' : '') + '</div>' : '') +
+        '<div class="solic-linha"><b>Local</b>' + escVist(s.local || '—') +
+          (s.localNovo && !s.clienteNovo ? ' <span class="solic-novo">🆕 local novo</span>' : '') + '</div>' +
+        (s.localizacao ? '<div class="solic-linha"><b>Localização</b>' + escVist(s.localizacao) + '</div>' : '') +
+        (s.telaCodigo ? '<div class="solic-linha"><b>Tela</b>' + escVist(s.telaCodigo) + (s.telaNome ? ' — ' + escVist(s.telaNome) : '') + '</div>' : '') +
         (s.dataPrevista ? '<div class="solic-linha"><b>Data prevista</b>' + s.dataPrevista.split('-').reverse().join('/') + '</div>' : '');
 
     const rotuloServico = ehEncerramento ? 'Diagnóstico / solução aplicada' : 'Problema relatado';
@@ -7364,7 +7431,11 @@ function aprovarSolicitacao(id){
   }
 
   // ---- pedido de abertura: cria a OS no quadro ----
-  askConfirm('Aprovar esta solicitação e criar a OS "' + s.protocolo + '" no quadro?', ()=>{
+  // v6.5: pedido de cliente novo (app): o cadastro no Mapa de Telas vai junto com a aprovação
+  const cadastraNovo = s.origemPerfil === 'app' && (s.clienteNovo || s.localNovo) && !!mapaLocaisLinhas;
+  askConfirm('Aprovar esta solicitação e criar a OS "' + s.protocolo + '" no quadro?' +
+    (cadastraNovo ? '\n\nE cadastrar no Mapa de Telas: ' + (s.empresa || 'cliente') + ' — ' + (s.local || 'local') + ' (1 tela)' +
+                    (s.localizacao ? ', ' + s.localizacao : '') + '.' : ''), ()=>{
     const prioMap = { 'Emergência':'maxima', 'Urgente':'urgente', 'Normal':'normal' };
     const servicosTxt = (s.servicos||[]).join(' | ');
     const materiaisTxt = (s.materiais||[]).join(', ');
@@ -7377,7 +7448,9 @@ function aprovarSolicitacao(id){
       local: s.local || ((s.servicos && s.servicos[0]) ? s.servicos[0].slice(0,80) : ('Solicitação ' + s.protocolo)),
       tipo: (s.acao === 'comprovacao' && (s.campanhas || s.video))
               ? ('Comprovação — ' + ((s.campanhas && s.campanhas.length) ? s.campanhas.join(' · ') : s.video))
-              : (doTecnico ? servicosTxt.slice(0,120) : ('Solicitação externa — ' + (s.empresa || s.solicitante))),
+              : (s.origemPerfil === 'app' ? ((s.problemaTipo || servicosTxt || 'Problema na tela').slice(0,120))
+              : (doTecnico ? servicosTxt.slice(0,120) : ('Solicitação externa — ' + (s.empresa || s.solicitante)))),
+      telaCodigo: s.telaCodigo || '',   // v6.5: a OS nasce na tela certa do Mapa de Telas
       prioridade: s.prioridade || prioMap[s.urgencia] || 'normal',
       status: 'aberta',
       solicitante: s.solicitante,
@@ -7414,6 +7487,9 @@ function aprovarSolicitacao(id){
     s.status = 'aprovada';
     s.decididoPor = currentUser ? currentUser.name : 'admin';
     s.decididoEm = Date.now();
+    s.osId = nova.id;        // v6.5: o pedido guarda a OS que gerou (o aviso mostra o número)
+    s.osCode = nova.code;
+    if(cadastraNovo) cliCadastrarDoPedido(s);
 
     persistComAviso('Não foi possível confirmar a aprovação no servidor. Repita com boa conexão.');
     avisarDecisaoAoTecnico(s, 'aprovada');
@@ -8062,6 +8138,176 @@ function tecAtualizaColab(){
     c.closest('.colab-chip').classList.toggle('oculto', fora);
   });
 }
+/* ================================================================
+   v6.4 — CLIENTES E TELAS (tabela mapa_locais do Supabase)
+   O Mapa de Telas e o app Solicitar OS leem a mesma lista. Programador
+   e Administrador cadastram cliente, local, quantas telas e onde fica.
+   ================================================================ */
+let mapaLocaisLinhas = null;          // linhas do banco (inclui as escondidas)
+let cliEditandoId = null;
+function aplicarMapaDoBanco(linhas){
+  const ativos = (linhas || []).filter(l=>l.ativo !== false)
+    .sort((a, b)=>(a.ordem - b.ordem) || (a.id - b.id));
+  if(!ativos.length) return;
+  const grupos = [], pos = {};
+  ativos.forEach(l=>{
+    if(!(l.grupo in pos)){ pos[l.grupo] = grupos.length; grupos.push({ grupo: l.grupo, tipo: l.tipo || '', locais: [] }); }
+    grupos[pos[l.grupo]].locais.push({ nome: l.local, qtd: l.qtd || 1, localizacao: l.localizacao || '', id: l.id });
+  });
+  EMPRESA.telas = grupos;
+}
+function openClientes(){
+  if(!ehOperador()) return;
+  if(!mapaLocaisLinhas){
+    askConfirm('A lista de clientes ainda não está no banco. Rode antes o arquivo 1_Supabase_Clientes_e_Telas.sql no SQL Editor do Supabase e recarregue o painel.', ()=>{});
+    return;
+  }
+  cliFecharForm();
+  cliDesenhar();
+  document.getElementById('clientesOverlay').classList.add('show');
+}
+function closeClientes(){ document.getElementById('clientesOverlay').classList.remove('show'); }
+function cliDesenhar(){
+  const linhas = (mapaLocaisLinhas || []).slice().sort((a, b)=>(a.ordem - b.ordem) || (a.id - b.id));
+  const grupos = [], pos = {};
+  linhas.forEach(l=>{ if(!(l.grupo in pos)){ pos[l.grupo] = grupos.length; grupos.push({ grupo: l.grupo, tipo: l.tipo, locais: [] }); } grupos[pos[l.grupo]].locais.push(l); });
+  document.getElementById('cliLista').innerHTML = grupos.map(g=>{
+    const telas = g.locais.filter(l=>l.ativo !== false).reduce((s, l)=>s + (l.qtd || 0), 0);
+    return '<div class="cli-grupo"><div class="cli-grupo-topo"><b>' + escVist(g.grupo) + '</b>' +
+      '<small>' + escVist(g.tipo || '') + ' · ' + telas + (telas === 1 ? ' tela' : ' telas') + '</small>' +
+      '<button class="btn" onclick="cliNovo(' + escVist(JSON.stringify(g.grupo)) + ')">＋ Local</button></div>' +
+      g.locais.map(l=>'<div class="cli-local' + (l.ativo === false ? ' inativo' : '') + '"><div>' + escVist(l.local) +
+        (l.localizacao ? '<span class="cli-onde">📍 ' + escVist(l.localizacao) + '</span>' : '') +
+        (l.ativo === false ? '<span class="cli-onde">fora do mapa</span>' : '') + '</div>' +
+        '<span class="cli-qtd">' + l.qtd + (l.qtd === 1 ? ' tela' : ' telas') + '</span>' +
+        '<button class="btn" onclick="cliEditar(' + l.id + ')">Editar</button></div>').join('') +
+      '</div>';
+  }).join('');
+  const gruposUnicos = [...new Set(linhas.map(l=>l.grupo))];
+  const tipos = [...new Set(linhas.map(l=>l.tipo).filter(Boolean))];
+  document.getElementById('cliListaGrupos').innerHTML = gruposUnicos.map(g=>'<option value="' + escVist(g) + '">').join('');
+  document.getElementById('cliListaTipos').innerHTML = tipos.map(t=>'<option value="' + escVist(t) + '">').join('');
+}
+function cliAbrirForm(titulo){
+  document.getElementById('cliFormTitulo').textContent = titulo;
+  document.getElementById('cliErro').textContent = '';
+  document.getElementById('cliForm').style.display = 'block';
+  document.getElementById('cliBtnNovo').style.display = 'none';
+  document.getElementById('cliForm').scrollIntoView({ block: 'nearest' });
+}
+function cliFecharForm(){
+  cliEditandoId = null;
+  document.getElementById('cliForm').style.display = 'none';
+  document.getElementById('cliBtnNovo').style.display = '';
+}
+function cliNovo(grupo){
+  cliEditandoId = null;
+  document.getElementById('cliGrupo').value = grupo || '';
+  document.getElementById('cliTipo').value = '';
+  cliSugereTipo();
+  ['cliLocal', 'cliOnde', 'cliNomes'].forEach(id=>document.getElementById(id).value = '');
+  document.getElementById('cliQtd').value = 1;
+  document.getElementById('cliAtivo').checked = true;
+  cliAbrirForm(grupo ? 'Novo local de ' + grupo : 'Novo cliente ou local');
+  setTimeout(()=>document.getElementById(grupo ? 'cliLocal' : 'cliGrupo').focus(), 50);
+}
+function cliEditar(id){
+  const l = (mapaLocaisLinhas || []).find(x=>x.id === id);
+  if(!l) return;
+  cliEditandoId = id;
+  document.getElementById('cliGrupo').value = l.grupo;
+  document.getElementById('cliTipo').value = l.tipo || '';
+  document.getElementById('cliLocal').value = l.local;
+  document.getElementById('cliQtd').value = l.qtd || 1;
+  document.getElementById('cliOnde').value = l.localizacao || '';
+  document.getElementById('cliAtivo').checked = l.ativo !== false;
+  const nomes = [];
+  for(let i = 1; i <= (l.qtd || 1); i++) nomes.push(((telasInfo[mtCodigo(l.grupo, l.local, i)] || {}).nome) || '');
+  while(nomes.length && !nomes[nomes.length - 1]) nomes.pop();
+  document.getElementById('cliNomes').value = nomes.join('\n');
+  cliAbrirForm('Editar ' + l.local);
+}
+// cliente que já existe: o tipo vem preenchido
+function cliSugereTipo(){
+  const g = document.getElementById('cliGrupo').value.trim().toLowerCase();
+  const achou = (mapaLocaisLinhas || []).find(l=>l.grupo.toLowerCase() === g);
+  const tipo = document.getElementById('cliTipo');
+  if(achou && !tipo.value) tipo.value = achou.tipo || '';
+}
+// v6.5: cliente/local novo vindo do app entra no Mapa de Telas ao aprovar o pedido
+async function cliCadastrarDoPedido(s){
+  try{
+    const linhas = mapaLocaisLinhas || [];
+    const existente = linhas.find(l=>l.grupo.toLowerCase() === String(s.empresa || '').toLowerCase());
+    const grupo = existente ? existente.grupo : String(s.empresa || 'Cliente').trim();
+    if(linhas.some(l=>l.grupo === grupo && l.local.toLowerCase() === String(s.local || '').toLowerCase())) return;
+    const doGrupo = linhas.filter(l=>l.grupo === grupo);
+    const maior = Math.max(0, ...linhas.map(l=>l.ordem || 0));
+    const r = await sb.from('mapa_locais').insert({
+      grupo: grupo, tipo: existente ? existente.tipo : 'Cliente', local: String(s.local || '').trim(), qtd: 1,
+      localizacao: s.localizacao || null, ativo: true,
+      ordem: doGrupo.length ? Math.max(...doGrupo.map(l=>l.ordem || 0)) + 1 : (Math.floor(maior / 100) + 1) * 100
+    });
+    if(r.error) throw new Error(r.error.message);
+    mapaLocaisLinhas = await _sbTudo('mapa_locais', '*', ['ordem', 'id']);
+    aplicarMapaDoBanco(mapaLocaisLinhas);
+    render();
+  }catch(e){
+    askConfirm('A OS foi criada, mas não foi possível cadastrar o local no Mapa de Telas: ' + e.message + '. Cadastre em Mapa de Telas → 🏢 Clientes e telas.', ()=>{});
+  }
+}
+function cliAjustaNomes(){ /* os nomes são opcionais: linhas a mais são ignoradas */ }
+async function cliSalvar(){
+  if(!ehOperador() || !sb) return;
+  const erro = document.getElementById('cliErro');
+  const v = id=>document.getElementById(id).value.trim();
+  let grupo = v('cliGrupo'), local = v('cliLocal');
+  const qtd = parseInt(v('cliQtd'), 10);
+  if(!grupo){ erro.textContent = 'Informe o cliente.'; return; }
+  if(!local){ erro.textContent = 'Informe o local.'; return; }
+  if(!(qtd >= 1 && qtd <= 60)){ erro.textContent = 'A quantidade de telas vai de 1 a 60.'; return; }
+  // mesmo cliente escrito de outro jeito ("coema" e "Coema") vira um só
+  const existente = (mapaLocaisLinhas || []).find(l=>l.grupo.toLowerCase() === grupo.toLowerCase());
+  if(existente) grupo = existente.grupo;
+  const repetido = (mapaLocaisLinhas || []).find(l=>l.id !== cliEditandoId && l.grupo === grupo && l.local.toLowerCase() === local.toLowerCase());
+  if(repetido){ erro.textContent = 'Este local já está cadastrado em ' + grupo + '. Use Editar na lista.'; return; }
+  const linha = { grupo: grupo, tipo: v('cliTipo') || null, local: local, qtd: qtd, localizacao: v('cliOnde') || null,
+                  ativo: document.getElementById('cliAtivo').checked };
+  if(!cliEditandoId){
+    const doGrupo = (mapaLocaisLinhas || []).filter(l=>l.grupo === grupo);
+    const maiorGeral = Math.max(0, ...(mapaLocaisLinhas || []).map(l=>l.ordem || 0));
+    linha.ordem = doGrupo.length ? Math.max(...doGrupo.map(l=>l.ordem || 0)) + 1 : (Math.floor(maiorGeral / 100) + 1) * 100;
+  }
+  const btn = document.getElementById('cliBtnSalvar');
+  btn.disabled = true; btn.textContent = 'Salvando…';
+  try{
+    const r = cliEditandoId
+      ? await sb.from('mapa_locais').update(linha).eq('id', cliEditandoId).select()
+      : await sb.from('mapa_locais').insert(linha).select();
+    if(r.error) throw new Error(r.error.message);
+    // nomes das telas: mesmo lugar dos nomes do Mapa de Telas
+    const nomes = v('cliNomes').split('\n').map(x=>x.trim());
+    let mudouNome = false;
+    for(let i = 1; i <= qtd; i++){
+      const nome = nomes[i - 1];
+      if(!nome) continue;
+      const cod = mtCodigo(grupo, local, i);
+      if((telasInfo[cod] || {}).nome !== nome){ telasInfo[cod] = Object.assign({}, telasInfo[cod] || {}, { nome: nome }); mudouNome = true; }
+    }
+    if(mudouNome) persistComAviso('Não foi possível confirmar a gravação dos nomes das telas. Repita com boa conexão.');
+    mapaLocaisLinhas = await _sbTudo('mapa_locais', '*', ['ordem', 'id']);
+    aplicarMapaDoBanco(mapaLocaisLinhas);
+    cliFecharForm();
+    cliDesenhar();
+    if(document.getElementById('mapaTelasPage').style.display === 'block') renderMapaTelas();
+    render();
+  }catch(e){
+    erro.textContent = 'Não foi possível salvar: ' + e.message;
+  }finally{
+    btn.disabled = false; btn.textContent = 'Salvar';
+  }
+}
+
 let tecRascunho = [];
 function openTecnicos(){
   if(!ehAdmin()) return;
@@ -9281,6 +9527,8 @@ function mtFiltrar(f){ mtFiltro = f; renderMapaTelas(); }
 function openMapaTelas(){
   const b = document.getElementById('btnMtEditar');
   if(b) b.style.display = ehAdmin() ? 'inline-flex' : 'none';
+  const bc = document.getElementById('btnMtClientes');
+  if(bc) bc.style.display = ehOperador() ? 'inline-flex' : 'none';   // v6.4: Programador e Administrador
   renderMapaTelas();
   document.getElementById('mapaTelasPage').style.display = 'block';
   mostrarVoltar(closeMapaTelas);
