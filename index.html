@@ -1776,7 +1776,7 @@
     <span id="syncInfo" class="subtitle mono" style="display:none;color:var(--teal);">sincronizando…</span>
     <div class="acoes-bar">
     <button class="btn" id="btnLock" onclick="handleLoginButton()">Sair</button>
-    <button class="btn" id="btnNotif" onclick="ativarNotificacoes(false)" style="display:none;">🔔 Ativar notificações</button>
+    <button class="btn" id="btnNotif" onclick="alternarNotificacoes()" style="display:none;">🔔 Ativar avisos</button>
     <button class="btn" id="btnSheetExport" onclick="exportarPlanilhaFormatada()" style="display: inline-flex;">📗 Visualizar em Excel (Backup)</button>
     <button class="btn" id="btnReport" onclick="openReportFilter('os')" style="display: inline-flex;">Relatório de OS</button>
     <button class="btn" id="btnReportVist" onclick="openReportFilter('vist')" style="display: inline-flex;">Relatório de vistoria</button>
@@ -3204,7 +3204,7 @@ const EMPRESA = {
    ao lado do título, então dá para conferir num relance se o
    aparelho está com a última cópia ou com uma antiga em cache.
    ============================================================ */
-const VERSAO_PAINEL = '6.5';
+const VERSAO_PAINEL = '6.6';
 const VERSAO_DATA = '27/10/2026';
 let buscaDigitada = false;   // v5.06: ver render()
 
@@ -4282,7 +4282,7 @@ const NOTIF_PERFIS = ['admin', 'manutencao', 'diretoria'];
 const NOTIF_ATIVA_KEY = 'os_notificacoes_ativas';
 let notifMensageiro = null;
 
-function notifPerfilRecebe(){ return !!(currentUser && NOTIF_PERFIS.includes(currentUser.role)); }
+function notifPerfilRecebe(){ return true; }   // v6.6: todos recebem o aviso de OS nova, inclusive quem só observa
 function notifSuportado(){ return ('serviceWorker' in navigator) && ('PushManager' in window) && ('Notification' in window); }
 function notifAtivaAqui(){
   try{ return notifSuportado() && Notification.permission === 'granted' && localStorage.getItem(NOTIF_ATIVA_KEY) === '1'; }catch(e){ return false; }
@@ -4291,7 +4291,8 @@ function atualizaBotaoNotif(){
   const b = document.getElementById('btnNotif');
   if(!b) return;
   b.style.display = notifPerfilRecebe() ? 'inline-flex' : 'none';
-  b.textContent = notifAtivaAqui() ? '🔔 Notificações ativas' : '🔔 Ativar notificações';
+  b.textContent = notifAtivaAqui() ? '🔕 Desativar avisos' : '🔔 Ativar avisos';
+  b.title = notifAtivaAqui() ? 'os avisos estão ligados neste aparelho; toque para desligar' : 'receber neste celular um aviso a cada OS aberta';
 }
 function notifCarregaScript(src){
   return new Promise((ok, falha)=>{
@@ -4337,12 +4338,28 @@ async function ativarNotificacoes(silencioso){
     if(!token) throw new Error('o Firebase não devolveu o registro do aparelho');
     const r = await sb.rpc('registrar_push', { p_token: token, p_aparelho: navigator.userAgent.slice(0, 200) });
     if(r.error || !r.data || !r.data.ok) throw new Error((r.data && r.data.error) || (r.error && r.error.message) || 'o banco não confirmou');
-    try{ localStorage.setItem(NOTIF_ATIVA_KEY, '1'); }catch(e){}
+    try{ localStorage.setItem(NOTIF_ATIVA_KEY, '1'); localStorage.setItem('os_notif_token', token); }catch(e){}
     atualizaBotaoNotif();
-    if(!silencioso) askConfirm('Notificações ativadas neste aparelho. Você vai receber um aviso a cada pedido novo, mesmo com o painel fechado.', ()=>{});
+    if(!silencioso) askConfirm('Avisos ativados neste aparelho. Você vai receber um aviso a cada OS aberta, mesmo com o painel fechado.', ()=>{});
   }catch(e){
     if(!silencioso) askConfirm('Não foi possível ativar as notificações agora: ' + e.message, ()=>{});
   }
+}
+
+/* v6.6: o mesmo botão liga e desliga */
+function alternarNotificacoes(){
+  if(notifAtivaAqui()) return desativarNotificacoes();
+  return ativarNotificacoes(false);
+}
+function desativarNotificacoes(){
+  askConfirm('Desativar os avisos neste aparelho? Você deixa de receber o aviso de OS nova aqui.', async ()=>{
+    let token = '';
+    try{ token = localStorage.getItem('os_notif_token') || ''; }catch(e){}
+    try{ const m = await notifMensageiroPronto(); await m.deleteToken(); }catch(e){}
+    try{ if(token && sb) await sb.rpc('push_desligar', { p_token: token }); }catch(e){}
+    try{ localStorage.removeItem(NOTIF_ATIVA_KEY); localStorage.removeItem('os_notif_token'); }catch(e){}
+    atualizaBotaoNotif();
+  });
 }
 
 function handleLoginButton(){
