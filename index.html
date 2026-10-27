@@ -1740,6 +1740,7 @@
     <span id="syncInfo" class="subtitle mono" style="display:none;color:var(--teal);">sincronizando…</span>
     <div class="acoes-bar">
     <button class="btn" id="btnLock" onclick="handleLoginButton()">Sair</button>
+    <button class="btn" id="btnNotif" onclick="ativarNotificacoes(false)" style="display:none;">🔔 Ativar notificações</button>
     <button class="btn" id="btnSheetExport" onclick="exportarPlanilhaFormatada()" style="display: inline-flex;">📗 Visualizar em Excel (Backup)</button>
     <button class="btn" id="btnReport" onclick="openReportFilter('os')" style="display: inline-flex;">Relatório de OS</button>
     <button class="btn" id="btnReportVist" onclick="openReportFilter('vist')" style="display: inline-flex;">Relatório de vistoria</button>
@@ -3118,7 +3119,7 @@ const EMPRESA = {
    ao lado do título, então dá para conferir num relance se o
    aparelho está com a última cópia ou com uma antiga em cache.
    ============================================================ */
-const VERSAO_PAINEL = '6.1';
+const VERSAO_PAINEL = '6.2';
 const VERSAO_DATA = '27/10/2026';
 let buscaDigitada = false;   // v5.06: ver render()
 
@@ -4174,6 +4175,88 @@ function renderConfigNeeded(){
     </div>`;
 }
 
+/* ================================================================
+   v6.2 — NOTIFICAÇÕES NO CELULAR (Firebase)
+   Programador, Administrador e Diretoria tocam uma vez em
+   "Ativar notificações": o celular fica registrado no Supabase e
+   passa a receber o aviso de cada pedido novo, mesmo com o painel fechado.
+   ================================================================ */
+const NOTIF_FIREBASE = {
+  apiKey: 'AIzaSyBcZzBG3ADvSkXAk2IKTNbUvjD0-T08alk',
+  authDomain: 'painel-de-os.firebaseapp.com',
+  projectId: 'painel-de-os',
+  storageBucket: 'painel-de-os.firebasestorage.app',
+  messagingSenderId: '575243124952',
+  appId: '1:575243124952:web:0ad5b1f2391dd369b0d7ad'
+};
+const NOTIF_CHAVE_WEB = 'BCxj2axzNNfHA8FmVjLjMkh5nV7w_IOPtcsO2TifZCaexxUmLd0m1ZF78f98y7DQxZbtX35i9-e4yzaTZdcQknA';
+const NOTIF_PERFIS = ['admin', 'manutencao', 'diretoria'];
+const NOTIF_ATIVA_KEY = 'os_notificacoes_ativas';
+let notifMensageiro = null;
+
+function notifPerfilRecebe(){ return !!(currentUser && NOTIF_PERFIS.includes(currentUser.role)); }
+function notifSuportado(){ return ('serviceWorker' in navigator) && ('PushManager' in window) && ('Notification' in window); }
+function notifAtivaAqui(){
+  try{ return notifSuportado() && Notification.permission === 'granted' && localStorage.getItem(NOTIF_ATIVA_KEY) === '1'; }catch(e){ return false; }
+}
+function atualizaBotaoNotif(){
+  const b = document.getElementById('btnNotif');
+  if(!b) return;
+  b.style.display = notifPerfilRecebe() ? 'inline-flex' : 'none';
+  b.textContent = notifAtivaAqui() ? '🔔 Notificações ativas' : '🔔 Ativar notificações';
+}
+function notifCarregaScript(src){
+  return new Promise((ok, falha)=>{
+    if(document.querySelector('script[src="' + src + '"]')) return ok();
+    const s = document.createElement('script'); s.src = src; s.onload = ok; s.onerror = ()=>falha(new Error('sem internet para carregar ' + src));
+    document.head.appendChild(s);
+  });
+}
+async function notifMensageiroPronto(){
+  if(notifMensageiro) return notifMensageiro;
+  await notifCarregaScript('https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js');
+  await notifCarregaScript('https://www.gstatic.com/firebasejs/10.12.2/firebase-messaging-compat.js');
+  if(!firebase.apps.length) firebase.initializeApp(NOTIF_FIREBASE);
+  notifMensageiro = firebase.messaging();
+  // com o painel aberto: mostra o aviso mesmo assim e já relê os dados
+  notifMensageiro.onMessage(async function(p){
+    try{
+      const reg = await navigator.serviceWorker.getRegistration('./');
+      const n = p.notification || {}, d = p.data || {};
+      if(reg) reg.showNotification(n.title || d.titulo || 'Painel de OS', { body: n.body || d.texto || '', icon: n.icon, data: { link: d.link || location.href } });
+    }catch(e){}
+    try{ loadData(); }catch(e){}
+  });
+  return notifMensageiro;
+}
+// silencioso = só renova o registro (sem perguntar nada); usado ao entrar no painel
+async function ativarNotificacoes(silencioso){
+  if(!notifPerfilRecebe()) return;
+  if(!notifSuportado()){
+    if(!silencioso) askConfirm('Este aparelho não recebe notificações do jeito em que o painel está aberto.\n\nNo iPhone: abra o painel no Safari, toque em Compartilhar → "Adicionar à Tela de Início" e abra o painel pelo ícone. Depois toque de novo em "Ativar notificações".', ()=>{});
+    return;
+  }
+  if(silencioso && Notification.permission !== 'granted') return;
+  try{
+    const permissao = silencioso ? 'granted' : await Notification.requestPermission();
+    if(permissao !== 'granted'){
+      if(!silencioso) askConfirm('As notificações ficaram bloqueadas neste aparelho. Para ligar, libere as notificações deste site nas configurações do navegador e toque de novo em "Ativar notificações".', ()=>{});
+      return;
+    }
+    const reg = await navigator.serviceWorker.register('firebase-messaging-sw.js');
+    const m = await notifMensageiroPronto();
+    const token = await m.getToken({ vapidKey: NOTIF_CHAVE_WEB, serviceWorkerRegistration: reg });
+    if(!token) throw new Error('o Firebase não devolveu o registro do aparelho');
+    const r = await sb.rpc('registrar_push', { p_token: token, p_aparelho: navigator.userAgent.slice(0, 200) });
+    if(r.error || !r.data || !r.data.ok) throw new Error((r.data && r.data.error) || (r.error && r.error.message) || 'o banco não confirmou');
+    try{ localStorage.setItem(NOTIF_ATIVA_KEY, '1'); }catch(e){}
+    atualizaBotaoNotif();
+    if(!silencioso) askConfirm('Notificações ativadas neste aparelho. Você vai receber um aviso a cada pedido novo, mesmo com o painel fechado.', ()=>{});
+  }catch(e){
+    if(!silencioso) askConfirm('Não foi possível ativar as notificações agora: ' + e.message, ()=>{});
+  }
+}
+
 function handleLoginButton(){
   if(currentUser){
     // Sair: encerra o login e volta a ver o quadro como observador
@@ -4273,6 +4356,7 @@ async function confirmCode(){
     updateModeUI();
     render();
     await loadData();   // relê com o acesso do perfil
+    ativarNotificacoes(true);   // v6.2: renova o registro do celular, se já estava ativo
     if(currentUser && currentUser.role === 'comprovacao') openCampanhas();   // a Comprovação entra direto nas campanhas
   } finally {
     btn.disabled = false; btn.textContent = 'Entrar';
@@ -4296,6 +4380,7 @@ function updateModeUI(){
   const isManut = currentUser?.role === 'manutencao';   // Administrador (técnico de manutenção)
   const isOperador = isAdmin || isManut;
   const isObservador = !currentUser;   // entra sem login: só acompanha, não altera nada
+  atualizaBotaoNotif();   // v6.2: notificações no celular
   const canCreate = (isOperador || isTecnico || isComprovacao);
 
   // planilha em Excel: liberada para todos, inclusive quem só observa
@@ -11703,6 +11788,7 @@ updateModeUI();
 const sessaoPronta = sbRestaurarSessao().then(function(perfil){
   currentUser = perfil;
   updateModeUI();
+  ativarNotificacoes(true);   // v6.2: renova o registro do celular, se já estava ativo
   return loadData();
 }).then(function(){
   startPolling();
