@@ -1,12 +1,12 @@
 {
   "name": "Solicitar OS — VTM",
   "short_name": "Solicitar OS",
-  "description": "Envie pedidos de serviço para a equipe de manutenção da VTM.",
+  "description": "Avise a VTM quando uma tela tiver problema.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
-  "background_color": "#1D1926",
-  "theme_color": "#1D1926",
+  "background_color": "#EF4827",
+  "theme_color": "#EF4827",
   "lang": "pt-BR",
   "icons": [
     {
