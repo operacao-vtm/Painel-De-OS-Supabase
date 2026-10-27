@@ -138,6 +138,9 @@ main.entrando{animation:abSobe .4s ease-out}
       <div class="fotos" id="fotos"></div>
       <div class="dica">Até 6 fotos.</div>
     </div>
+    <div id="avisoCelBox" class="oculto">
+      <label class="marcar"><input type="checkbox" id="avisoCel" checked> Avisar neste celular quando o pedido virar OS</label>
+    </div>
     <div class="erro" id="eEnvio"></div>
     <button type="submit" class="bt bt-enviar" id="enviar">Enviar solicitação</button>
   </form>
@@ -146,7 +149,7 @@ main.entrando{animation:abSobe .4s ease-out}
     <h2>Solicitação enviada</h2>
     <p>Guarde o número do pedido:</p>
     <p class="proto" id="proto"></p>
-    <p class="dica">A equipe de manutenção vai analisar. Quando aprovar, o pedido vira uma OS no painel.</p>
+    <p class="dica" id="dicaPronto">A equipe de manutenção vai analisar. Quando aprovar, o pedido vira uma OS no painel.</p>
     <button type="button" class="bt" id="outra" style="margin-top:14px">Fazer outra solicitação</button>
   </section>
 </main>
@@ -167,6 +170,33 @@ $('fArquivo').addEventListener('change', e=>{ adicionarFotos(e.target.files); e.
 ['nome','local','email'].forEach(id=>$(id).addEventListener('input', ()=>$('e' + id[0].toUpperCase() + id.slice(1)).classList.remove('mostra')));
 
 const cabecalho = { apikey: SUPA_ANON, Authorization: 'Bearer ' + SUPA_ANON };
+
+// notificação no celular (Firebase): avisa quem pediu quando o pedido virar OS
+const FIREBASE_CONFIG = {
+  apiKey: 'AIzaSyBcZzBG3ADvSkXAk2IKTNbUvjD0-T08alk', authDomain: 'painel-de-os.firebaseapp.com',
+  projectId: 'painel-de-os', storageBucket: 'painel-de-os.firebasestorage.app',
+  messagingSenderId: '575243124952', appId: '1:575243124952:web:0ad5b1f2391dd369b0d7ad'
+};
+const FIREBASE_CHAVE_WEB = 'BCxj2axzNNfHA8FmVjLjMkh5nV7w_IOPtcsO2TifZCaexxUmLd0m1ZF78f98y7DQxZbtX35i9-e4yzaTZdcQknA';
+const avisoSuportado = ('serviceWorker' in navigator) && ('PushManager' in window) && ('Notification' in window) && location.protocol === 'https:';
+if(avisoSuportado) $('avisoCelBox').classList.remove('oculto');
+function carregaScript(src){
+  return new Promise((ok, falha)=>{
+    if(document.querySelector('script[src="' + src + '"]')) return ok();
+    const s = document.createElement('script'); s.src = src; s.onload = ok; s.onerror = ()=>falha(new Error('script')); document.head.appendChild(s);
+  });
+}
+// devolve o registro deste celular, ou '' se não der (a pessoa recusou, sem internet etc.)
+async function registroDoCelular(permissao){
+  try{
+    if(await permissao !== 'granted') return '';
+    const reg = await navigator.serviceWorker.register('sw.js');
+    await carregaScript('https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js');
+    await carregaScript('https://www.gstatic.com/firebasejs/10.12.2/firebase-messaging-compat.js');
+    if(!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
+    return (await firebase.messaging().getToken({ vapidKey: FIREBASE_CHAVE_WEB, serviceWorkerRegistration: reg })) || '';
+  }catch(e){ return ''; }
+}
 // envia a foto para a pasta do app e devolve o endereço público dela
 async function enviarFoto(blob, nome){
   const caminho = 'app/' + new Date().toISOString().slice(0,7) + '/' + nome + '.jpg';
@@ -223,6 +253,9 @@ async function adicionarFotos(lista){
 
 $('form').addEventListener('submit', async (ev)=>{
   ev.preventDefault();
+  // a pergunta "Permitir notificações?" precisa sair no mesmo toque do botão
+  const querAviso = avisoSuportado && $('avisoCel').checked;
+  const permissao = querAviso ? (Notification.permission === 'default' ? Notification.requestPermission() : Promise.resolve(Notification.permission)) : null;
   const nome = $('nome').value.trim(), local = $('local').value.trim(), email = $('email').value.trim();
   let falta = false;
   if(!nome){ $('eNome').classList.add('mostra'); falta = true; }
@@ -235,14 +268,18 @@ $('form').addEventListener('submit', async (ev)=>{
   try{ localStorage.setItem('vtmNomeSolicitante', nome); localStorage.setItem('vtmEmailSolicitante', email); }catch(e){}
   const bt = $('enviar'); bt.disabled = true; bt.textContent = 'Enviando…';
   try{
+    const celular = querAviso ? await registroDoCelular(permissao) : '';
     const j = await enviarPedido({
       solicitante: nome, email: email, local: local, problema: $('problema').value.trim(),
       acao: $('acao').value, prioridade: $('prioridade').value, dataPrevista: $('data').value,
       materiais: $('temMaterial').checked ? $('materiais').value.split('\n').map(s=>s.trim()).filter(Boolean) : [],
-      fotos: fotos.filter(f=>f.estado === 'ok').map(f=>f.url)
+      fotos: fotos.filter(f=>f.estado === 'ok').map(f=>f.url),
+      push_token: celular
     });
     if(!j || !j.ok) throw new Error((j && j.error) || 'sem resposta');
     $('proto').textContent = j.protocolo;
+    $('dicaPronto').textContent = 'A equipe de manutenção vai analisar.' +
+      (celular ? ' Você vai receber um aviso neste celular quando o pedido virar OS.' : ' Quando aprovar, o pedido vira uma OS no painel.');
     $('form').classList.add('oculto'); $('pronto').classList.remove('oculto');
     window.scrollTo(0, 0);
   }catch(e){
