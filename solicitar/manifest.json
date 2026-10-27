@@ -1,0 +1,31 @@
+{
+  "name": "Solicitar OS — VTM",
+  "short_name": "Solicitar OS",
+  "description": "Envie pedidos de serviço para a equipe de manutenção da VTM.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#1D1926",
+  "theme_color": "#1D1926",
+  "lang": "pt-BR",
+  "icons": [
+    {
+      "src": "icone-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icone-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icone-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
