@@ -1723,6 +1723,13 @@
     border:1px solid var(--border); background:var(--panel-alt); color:var(--text); font:inherit; font-size:13px; font-weight:600; cursor:pointer; }
   #codeOverlay .modal-actions{ position:static; background:none; border-top:0; padding:0; margin-top:18px; gap:12px; flex-wrap:nowrap; }
   #codeOverlay .modal-actions .btn{ flex:1 1 0; justify-content:center; min-height:50px; font-size:16px; border-radius:12px; }
+
+/* v6.7: a OS conversa com o estoque */
+.material-row .mat-saldo{grid-column:1/-1;font-size:10px;margin:-2px 0 4px 2px;min-height:12px}
+.mat-saldo.ok{color:var(--green,#2E9E5B)} .mat-saldo.sem{color:var(--amber,#C98A12)} .mat-saldo.fora{color:var(--muted)}
+.est-pedidos{margin:6px 0 2px;display:flex;flex-direction:column;gap:4px}
+.est-ped{font-size:11px;border:1px solid var(--border);border-radius:6px;padding:5px 8px;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.est-ped b{font-size:11.5px}
 </style>
 <style id="estiloPagina">@page{size:A4 landscape;margin:10mm;}</style>
 <!-- banco de dados: biblioteca oficial do Supabase (versão fixa) -->
@@ -2338,9 +2345,12 @@
           <span>MATERIAIS NECESSÁRIOS</span><span style="text-align:center;">QTD</span><span style="text-align:center;">UNID.</span>
         </div>
         <div id="materiaisLista"></div>
+            <datalist id="estCatalogoLista"></datalist>
+            <div id="estPedidosOS" class="est-pedidos"></div>
         <div class="bloco-materiais-acoes">
           <button type="button" class="btn" id="btnAddMaterial" onclick="adicionarLinhaMaterial()">+ Adicionar Material</button>
           <button type="button" class="btn danger" id="btnDelMaterial" onclick="excluirMaterialSelecionado()">− Excluir Material</button>
+            <button type="button" class="btn" id="btnPedirAlmox" onclick="estPedirAlmox()" style="display:none;border-color:#E5397F;color:#E5397F;">📦 Pedir ao almoxarifado</button>
         </div>
         <div class="bloco-materiais-dica" id="matDica">Toque em uma linha para selecioná-la antes de excluir.</div>
       </div>
@@ -3204,7 +3214,7 @@ const EMPRESA = {
    ao lado do título, então dá para conferir num relance se o
    aparelho está com a última cópia ou com uma antiga em cache.
    ============================================================ */
-const VERSAO_PAINEL = '6.6';
+const VERSAO_PAINEL = '6.7';
 const VERSAO_DATA = '27/10/2026';
 let buscaDigitada = false;   // v5.06: ver render()
 
@@ -3500,7 +3510,7 @@ const SB_MAPA_SOL = [
  ['responsavel','responsavel','t'],['decidido_por','decididoPor','t'],['decidido_em','decididoEm','ts'],
  ['motivo_rejeicao','motivoRejeicao','t']
 ];
-const SB_MAPA_MAT  = [['nome','nome','t'],['quantidade','quantidade','n'],['unidade','unidade','t']];
+const SB_MAPA_MAT  = [['nome','nome','t'],['quantidade','quantidade','n'],['unidade','unidade','t'],['material_id','materialId','t']];   // v6.7: produto do estoque
 const SB_MAPA_VIS  = [['vistoriador','vistoriador','t'],['data','data','ts'],['sigla','sigla','t'],['obs_gerais','obsGerais','t'],['conjuntos','conjuntos','j']];
 const SB_MAPA_DIA  = [['data','data','t'],['atualizado_por','atualizadoPor','t'],['atualizado_em','atualizadoEm','ts']];
 const SB_MAPA_ITEM = [['os_id','osId','t'],['os_codigo','codigo','t'],['local','local','t'],['tipo','tipo','t'],['acao','acao','t'],
@@ -5120,7 +5130,8 @@ function openModal(id){
     limparListaMateriais();
     const materiaisExistentes = it.materiais && it.materiais.length ? it.materiais
       : (it.nomeMaterial ? [{nome: it.nomeMaterial, quantidade: it.quantidade||0}] : []);
-    materiaisExistentes.forEach(m=>adicionarLinhaMaterial(m.nome, m.quantidade, m.unidade));
+    materiaisExistentes.forEach(m=>adicionarLinhaMaterial(m.nome, m.quantidade, m.unidade, m.materialId));
+  estMostraPedidos(it.code);   // v6.7: pedidos ao almoxarifado desta OS
     toggleCompraFields();
     document.getElementById('fVideoVerif').value = it.videoVerif || '';
     document.getElementById('fVideoConclusao').value = it.videoConclusao || '';
@@ -5258,6 +5269,8 @@ function atualizaDicaParcial(){
 
 function toggleCompraFields(){
   const marcado = document.getElementById('fEhCompra').checked;
+  if(marcado) estCarregaCatalogo();   // v6.7
+  { const bt = document.getElementById('btnPedirAlmox'); if(bt) bt.style.display = (currentUser && currentUser.role === 'manutencao' && editingId) ? '' : 'none'; }
   document.getElementById('compraFieldsWrap').style.display = marcado ? 'block' : 'none';
   document.getElementById('avisoAguardandoPeca').style.display = marcado ? 'block' : 'none';
   if(marcado && document.getElementById('materiaisLista').children.length === 0){
@@ -5279,12 +5292,13 @@ function toggleMaterialEntregue(){
 }
 
 
-function adicionarLinhaMaterial(nome, quantidade, unidade){
+function adicionarLinhaMaterial(nome, quantidade, unidade, materialId){
   const wrap = document.createElement('div');
   wrap.className = 'material-row';
+  if(materialId) wrap.dataset.mid = materialId;   // v6.7: produto do estoque
   wrap.onclick = function(){ selecionaLinhaMaterial(wrap); };
   wrap.innerHTML = `
-    <input type="text" class="mat-nome" value="${nome ? nome.replace(/"/g,'&quot;') : ''}">
+    <input type="text" class="mat-nome" list="estCatalogoLista" placeholder="digite para buscar no estoque" value="${nome ? nome.replace(/"/g,'&quot;') : ''}">
     <input type="text" class="mat-qtd" inputmode="numeric" maxlength="5" value="${quantidade || ''}">
     <input type="text" class="mat-un" maxlength="8" value="${unidade ? unidade.replace(/"/g,'&quot;') : ''}">
   `;
@@ -5299,6 +5313,9 @@ function adicionarLinhaMaterial(nome, quantidade, unidade){
     el.addEventListener('focus', ()=>{ selecionaLinhaMaterial(wrap); });
   });
   document.getElementById('materiaisLista').appendChild(wrap);
+  wrap.insertAdjacentHTML('beforeend', '<div class="mat-saldo"></div>');   // v6.7: saldo do estoque
+  wrap.querySelector('.mat-nome').addEventListener('input', ()=>estAjustaLinha(wrap));
+  estAjustaLinha(wrap);
   selecionaLinhaMaterial(wrap);
   return wrap;
 }
@@ -5352,7 +5369,8 @@ function coletarMateriais(){
   return Array.from(document.querySelectorAll('#materiaisLista .material-row')).map(row=>({
     nome: row.querySelector('.mat-nome').value.trim(),
     quantidade: parseInt(row.querySelector('.mat-qtd').value, 10) || 0,
-    unidade: row.querySelector('.mat-un').value.trim() || 'und'
+    unidade: row.querySelector('.mat-un').value.trim() || 'und',
+    materialId: row.dataset.mid || ''
   })).filter(m=>m.nome !== '');
 }
 
@@ -12120,6 +12138,75 @@ sessaoPronta.then(function(){
 
 /* O bloco de carga única da OS-0061 foi removido: ele podia sobrescrever
    os dados do servidor quando a leitura demorava. */
+
+/* =====================================================================
+   v6.7 — A OS CONVERSA COM O ESTOQUE
+   O material da OS busca no catálogo do estoque e mostra o saldo.
+   Só o Administrador manda o pedido ao almoxarifado; a OS mostra a situação.
+   ===================================================================== */
+let estCatalogo = [], estCatalogoEm = 0;
+async function estCarregaCatalogo(){
+  if(!sb || Date.now() - estCatalogoEm < 60000) return estCatalogo;
+  try{
+    const r = await sb.rpc('est_catalogo');
+    if(!r.error && Array.isArray(r.data)){
+      estCatalogo = r.data; estCatalogoEm = Date.now();
+      const dl = document.getElementById('estCatalogoLista');
+      if(dl) dl.innerHTML = estCatalogo.map(m=>'<option value="' + escVist(m.nome) + '">' + (Number(m.disponivel) > 0 ? 'tem ' + Number(m.disponivel) + ' ' + escVist(m.unidade) : 'sem saldo') + '</option>').join('');
+      document.querySelectorAll('#materiaisLista .material-row').forEach(estAjustaLinha);
+    }
+  }catch(e){}
+  return estCatalogo;
+}
+const estNorm = t=>String(t||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();
+function estAjustaLinha(wrap){
+  if(!wrap) return;
+  const info = wrap.querySelector('.mat-saldo'); if(!info) return;
+  const nome = wrap.querySelector('.mat-nome').value;
+  const m = estCatalogo.find(x=>estNorm(x.nome) === estNorm(nome));
+  if(!nome.trim()){ info.textContent = ''; info.className = 'mat-saldo'; delete wrap.dataset.mid; return; }
+  if(!m){ delete wrap.dataset.mid; info.textContent = estCatalogo.length ? 'não está no cadastro do estoque · o almoxarifado decide como comprar' : ''; info.className = 'mat-saldo fora'; return; }
+  wrap.dataset.mid = m.id;
+  const un = wrap.querySelector('.mat-un'); if(un && !un.value.trim()) un.value = m.unidade || 'und';
+  const d = Number(m.disponivel) || 0;
+  info.textContent = d > 0 ? '✓ no estoque: tem ' + d + ' ' + (m.unidade || 'und') : '⚠ sem saldo no estoque · o pedido fica aguardando compra';
+  info.className = 'mat-saldo ' + (d > 0 ? 'ok' : 'sem');
+}
+const EST_SITUACAO = { aguardando:'🕒 aguardando o almoxarifado', compra:'🛒 aguardando compra', liberacao:'📦 separado · aguardando liberação', atendido:'✅ liberado · retirar no almoxarifado', cancelado:'✖ cancelado' };
+async function estMostraPedidos(codigo){
+  const caixa = document.getElementById('estPedidosOS'), bt = document.getElementById('btnPedirAlmox');
+  if(bt) bt.style.display = (currentUser && currentUser.role === 'manutencao' && editingId) ? '' : 'none';
+  if(!caixa) return;
+  caixa.innerHTML = '';
+  estCarregaCatalogo();
+  if(!codigo || !sb) return;
+  try{
+    const r = await sb.rpc('est_pedidos_da_os', { p_codigo: codigo });
+    const L = (!r.error && Array.isArray(r.data)) ? r.data : [];
+    const nome = {}; estCatalogo.forEach(m=>{ nome[m.id] = m.nome; });
+    caixa.innerHTML = L.map(p=>'<div class="est-ped"><b>' + escVist(p.numero || 'pedido') + '</b><span>' + (EST_SITUACAO[p.status] || escVist(p.status)) + '</span>' +
+      '<span style="color:var(--muted)">' + (p.itens || []).map(it=>(it.qtd || 1) + '× ' + escVist(nome[it.precisaId] || it.nomeLivre || 'material')).join(' · ') + '</span></div>').join('');
+  }catch(e){}
+}
+async function estPedirAlmox(){
+  if(!currentUser || currentUser.role !== 'manutencao'){ askConfirm('Só o Administrador pede material ao almoxarifado.', ()=>{}); return; }
+  const it = items.find(x=>x.id === editingId);
+  if(!it || !it.code){ askConfirm('Salve a OS antes de pedir o material ao almoxarifado.', ()=>{}); return; }
+  await estCarregaCatalogo();
+  const linhas = coletarMateriais().filter(m=>m.quantidade > 0);
+  if(!linhas.length){ askConfirm('Informe os materiais e as quantidades antes de pedir.', ()=>{}); return; }
+  const itens = linhas.map(m=>m.materialId ? { precisaId: m.materialId, qtd: m.quantidade } : { nomeLivre: m.nome, qtd: m.quantidade });
+  const resumo = linhas.map(m=>m.quantidade + '× ' + m.nome).join('\n');
+  askConfirm('Mandar este pedido ao almoxarifado para a ' + it.code + '?\n\n' + resumo, async ()=>{
+    const r = await sb.rpc('est_pedido_da_os', { p_codigo: it.code, p_itens: itens });
+    if(r.error){ askConfirm('Não foi possível pedir: ' + (r.error.message || r.error), ()=>{}); return; }
+    it.compraMaterial = true; it.materialEntregue = false;
+    const cb = document.getElementById('fEhCompra'); if(cb && !cb.checked){ cb.checked = true; toggleCompraFields(); }
+    const me = document.getElementById('fMaterialEntregue'); if(me) me.checked = false;
+    estMostraPedidos(it.code);
+    askConfirm('Pedido ' + (r.data || '') + ' enviado ao almoxarifado. A situação aparece aqui na OS.', ()=>{});
+  });
+}
 </script>
 
 
