@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#0E0B13">
-<title>Modo TV · VTM</title>
+<title>Mapa de Telas · Modo TV</title>
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icone-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com/">
@@ -62,8 +62,8 @@ h2 small{font-family:'DM Sans';font-weight:500;font-size:24px;color:var(--ink2);
 .leg i{display:block;width:24px;height:24px;border-radius:6px}
 /* andamento */
 .big5{display:grid;grid-template-columns:repeat(5,1fr);gap:20px}
-.rosca{display:flex;align-items:center;gap:22px}
-.rosca .lg div{display:flex;align-items:center;gap:12px;font-size:22px;margin:8px 0;white-space:nowrap}
+.rosca{display:flex;align-items:center;gap:30px}
+.rosca .lg div{display:flex;align-items:center;gap:12px;font-size:24px;margin:8px 0}
 .rosca .lg i{display:block;width:18px;height:18px;border-radius:4px}
 .rosca .lg b{margin-left:auto;padding-left:18px;font-family:Archivo}
 .barra{display:flex;align-items:center;gap:16px;margin:14px 0;font-size:24px}
@@ -89,7 +89,7 @@ h2 small{font-family:'DM Sans';font-weight:500;font-size:24px;color:var(--ink2);
 <div id="palco">
   <div class="topo">
     <div class="marca"><i style="height:16px"></i><i style="height:26px"></i><i style="height:35px"></i><i style="height:44px"></i></div>
-    <div><h1 id="titulo">Andamento das OS</h1><div class="sub" id="subt">Modo TV</div></div>
+    <div><h1 id="titulo">Mapa de Telas</h1><div class="sub" id="subt">Modo TV</div></div>
     <div class="esp"></div>
     <div class="at" id="at">conectando…</div>
     <div class="hora" id="hora">--:--</div>
@@ -97,28 +97,12 @@ h2 small{font-family:'DM Sans';font-weight:500;font-size:24px;color:var(--ink2);
 
   
 
-  
-
-  <section class="tela" id="t-almox" data-nome="Almoxarifado">
-    <div class="kpis" id="almoxKpis"></div>
-    <div class="cols" style="grid-template-columns:1fr 1fr">
-      <div class="caixa"><h3>Quem pediu material</h3><div id="almoxPedidos"></div></div>
-      <div class="caixa"><h3>Zerados · precisa comprar</h3><div id="almoxZerados"></div></div>
-    </div>
-  </section>
-
   <section class="tela" id="t-mapa" data-nome="Mapa de Telas">
     <div class="leg" id="mapaLeg"></div>
     <div class="mapa" id="mapaGrupos"></div>
   </section>
 
-  <section class="tela" id="t-os" data-nome="Andamento das OS">
-    <div class="big5" id="osNums"></div>
-    <div class="cols" style="grid-template-columns:1120px 1fr">
-      <div class="caixa"><div style="display:grid;grid-template-columns:1fr 1fr;gap:20px"><div><h3 id="osMesTit">Situação do mês</h3><div class="rosca" id="osRosca"></div></div><div><h3>Atendimentos VTM × EPX</h3><div class="rosca" id="osRoscaVE"></div></div></div></div>
-      <div class="caixa"><h3>OS abertas há mais tempo</h3><div id="osLista"></div></div>
-    </div>
-  </section>
+  
 
   
 
@@ -130,13 +114,6 @@ h2 small{font-family:'DM Sans';font-weight:500;font-size:24px;color:var(--ink2);
 
 <script>
 (function(){
-/* qual quadro: o começo do link (#os, #mapa ou #estoque) */
-const QUADROS={os:{sec:'t-os',tit:'Andamento das OS',sub:'Painel de OS'},mapa:{sec:'t-mapa',tit:'Mapa de Telas',sub:'Painel de OS'},estoque:{sec:'t-almox',tit:'Controle de Estoque',sub:'Almoxarifado'}};
-const QUADRO=(((location.hash||'').replace(/^#/,'').split('&')[0]||'os').toLowerCase());
-const QD=QUADROS[QUADRO]||QUADROS.os;
-document.querySelectorAll('.tela').forEach(t=>{ if(t.id!==QD.sec) t.remove(); });
-document.getElementById('titulo').textContent=QD.tit; document.title=QD.tit+' · Modo TV';
-addEventListener('hashchange',()=>location.reload());
 const SB_URL='https://xqeyhsuoinayuwydyesu.supabase.co';
 const SB_ANON='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhxZXloc3VvaW5heXV3eWR5ZXN1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI2ODM2NjAsImV4cCI6MjEwODI1OTY2MH0.qI3ExHVnS4gudCM4U4JSuPidzJUSVKneOcydoSLoMLw';
 const K_AUTH='tv-os:auth', GIRO=30000, ATUALIZA=60000;
@@ -226,12 +203,12 @@ function pintaMapa(){
     return '<div class="grp"><h4>'+esc(g.grupo)+' <small>· '+tot+' telas</small></h4><div class="locs">'+locs+'</div></div>'; }).join('')||'<div class="vazio">O Mapa de Telas ainda não tem locais cadastrados.</div>';
   $('mapaLeg').innerHTML='<div><i style="background:var(--mag)"></i><b>'+nP+'</b> com problema</div><div><i style="background:var(--azul)"></i><b>'+nV+'</b> em vistoria</div><div><i style="background:var(--verde)"></i><b>'+(nT-nP-nV-nPd)+'</b> sem OS aberta</div><div><i style="background:#4A4256"></i><b>'+nPd+'</b> sem histórico</div><div><b>'+nT+'</b> telas</div>';
 }
-function rosca(fatias,total,rotulo){ rotulo=rotulo||'OS no mês'; const R=130,r=82,cx=150,cy=150; if(!total) return '<svg width="300" height="300"><circle cx="150" cy="150" r="106" fill="none" stroke="#2E2639" stroke-width="48"/><text x="150" y="160" text-anchor="middle" font-size="30" fill="#857C93">sem dados</text></svg>';
+function rosca(fatias,total){ const R=150,r=95,cx=170,cy=170; if(!total) return '<svg width="340" height="340"><circle cx="170" cy="170" r="122" fill="none" stroke="#2E2639" stroke-width="55"/><text x="170" y="180" text-anchor="middle" font-size="30" fill="#857C93">sem OS</text></svg>';
   let a=-Math.PI/2; const arcos=fatias.filter(f=>f.v>0).map(f=>{ const ang=f.v/total*Math.PI*2, a2=a+ang; const big=ang>Math.PI?1:0;
     const pt=(rr,an)=>(cx+rr*Math.cos(an)).toFixed(1)+' '+(cy+rr*Math.sin(an)).toFixed(1);
     const d=ang>=Math.PI*2-1e-6?'M '+pt(R,0)+' A '+R+' '+R+' 0 1 1 '+pt(R,Math.PI)+' A '+R+' '+R+' 0 1 1 '+pt(R,0)+' M '+pt(r,0)+' A '+r+' '+r+' 0 1 0 '+pt(r,Math.PI)+' A '+r+' '+r+' 0 1 0 '+pt(r,0)
       :'M '+pt(R,a)+' A '+R+' '+R+' 0 '+big+' 1 '+pt(R,a2)+' L '+pt(r,a2)+' A '+r+' '+r+' 0 '+big+' 0 '+pt(r,a)+' Z'; a=a2; return '<path d="'+d+'" fill="'+f.c+'" fill-rule="evenodd"/>'; }).join('');
-  return '<svg width="300" height="300" viewBox="0 0 300 300">'+arcos+'<text x="150" y="158" text-anchor="middle" font-size="58" font-weight="800" fill="#F3EFF7" font-family="Archivo">'+total+'</text><text x="150" y="192" text-anchor="middle" font-size="20" fill="#B3AABF">'+rotulo+'</text></svg>'; }
+  return '<svg width="340" height="340" viewBox="0 0 340 340">'+arcos+'<text x="170" y="178" text-anchor="middle" font-size="64" font-weight="800" fill="#F3EFF7" font-family="Archivo">'+total+'</text><text x="170" y="214" text-anchor="middle" font-size="22" fill="#B3AABF">OS no mês</text></svg>'; }
 function pintaOS(){
   const ag=new Date(), MES=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
   const doMes=D.os.filter(x=>{ if(!x.dataAbertura) return false; const d=new Date(x.dataAbertura); return d.getFullYear()===ag.getFullYear()&&d.getMonth()===ag.getMonth(); });
@@ -241,10 +218,6 @@ function pintaOS(){
   $('osMesTit').textContent='Situação de '+MES[ag.getMonth()];
   const F=[{n:'Encerradas',v:r.realizadas,c:'#2FBF8F'},{n:'Em andamento',v:r.andamento,c:'#5B8DEF'},{n:'Atrasadas',v:r.atrasadas,c:'#F7962C'},{n:'Aguard. material',v:r.aguardando,c:'#9B8AFB'},{n:'Abertas',v:r.abertas,c:'#E5397F'}];
   $('osRosca').innerHTML=rosca(F,r.emitidas)+'<div class="lg">'+F.map(f=>'<div><i style="background:'+f.c+'"></i>'+f.n+'<b>'+f.v+'</b></div>').join('')+'</div>';
-  /* VTM × EPX: OS encerradas no mês por quem encerrou (Pacheco = EPX, o resto = VTM), igual ao painel */
-  let nE=0,nV=0; doMes.filter(x=>x.status==='concluida'&&x.encerradoPor).forEach(x=>{ if(String(x.encerradoPor).toLowerCase().indexOf('pacheco')>=0) nE++; else nV++; });
-  const FV=[{n:'VTM',v:nV,c:'#2FBF8F'},{n:'EPX',v:nE,c:'#F7962C'}];
-  $('osRoscaVE').innerHTML=rosca(FV,nV+nE,'encerradas')+'<div class="lg">'+FV.map(f=>'<div><i style="background:'+f.c+'"></i>'+f.n+'<b>'+f.v+'</b></div>').join('')+'</div>';
   const ab=D.os.filter(x=>x.status!=='concluida'&&!x.arquivada).sort((a,b)=>(a.dataAbertura||0)-(b.dataAbertura||0)).slice(0,8);
   $('osLista').innerHTML=ab.length?ab.map(x=>{ const dias=Math.floor(tempoUtil(x)/864e5); const at=estaAtrasada(x), pc=aguardandoPeca(x);
     return '<div class="lin"><span>'+esc(x.code||'OS')+' · '+esc(x.local||'')+'</span><span style="color:'+(at?'#F7962C':pc?'#9B8AFB':'#B3AABF')+'">'+(pc?'aguardando material':(dias+(dias===1?' dia':' dias')))+(x.tecnico?' · '+esc(x.tecnico):'')+'</span></div>'; }).join(''):'<div class="vazio">Nenhuma OS aberta.</div>';
@@ -263,7 +236,7 @@ function pintaTudo(){ try{ pintaAlmox(); }catch(e){} try{ pintaMapa(); }catch(e)
 const TELAS=[...document.querySelectorAll('.tela')]; let atual=0, pausado=false, t0=Date.now();
 $('pontos').innerHTML=TELAS.map((t,i)=>'<span data-i="'+i+'"><i><b></b></i>'+esc(t.dataset.nome)+'</span>').join('');
 function vai(i){ atual=(i+TELAS.length)%TELAS.length; TELAS.forEach((t,k)=>t.classList.toggle('on',k===atual)); document.querySelectorAll('#pontos span').forEach((s,k)=>s.classList.toggle('on',k===atual));
-  $('subt').textContent=QD.sub; t0=Date.now(); }
+  $('subt').textContent='Painel de OS'; t0=Date.now(); }
 setInterval(()=>{ const b=document.querySelector('#pontos span.on b'); const f=pausado?0:Math.min(1,(Date.now()-t0)/GIRO); if(b) b.style.width=(f*100)+'%';  },200);
 addEventListener('keydown',e=>{
   if(e.key==='ArrowRight') vai(atual+1); else if(e.key==='ArrowLeft') vai(atual-1);

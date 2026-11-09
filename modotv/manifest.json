@@ -1,6 +1,6 @@
 {
- "name": "Modo TV · VTM",
- "short_name": "Modo TV",
+ "name": "Mapa de Telas · TV",
+ "short_name": "Mapa na TV",
  "start_url": "./",
  "scope": "./",
  "display": "fullscreen",
