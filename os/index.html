@@ -103,7 +103,7 @@ h2 small{font-family:'DM Sans';font-weight:500;font-size:24px;color:var(--ink2);
     <div class="big5" id="osNums"></div>
     <div class="cols" style="grid-template-columns:1120px 1fr">
       <div class="caixa"><div style="display:grid;grid-template-columns:1fr 1fr;gap:20px"><div><h3 id="osMesTit">Situação do mês</h3><div class="rosca" id="osRosca"></div></div><div><h3>Atendimentos VTM × EPX</h3><div class="rosca" id="osRoscaVE"></div></div></div></div>
-      <div class="caixa"><h3>OS abertas há mais tempo</h3><div id="osLista"></div></div>
+      <div class="caixa"><h3>OS em aberto deste mês</h3><div id="osLista"></div></div>
     </div>
   </section>
 
@@ -173,10 +173,11 @@ function mtNumerosTelaNoTexto(os){ const txt=((os.tipo||'')+' '+(os.diagnostico|
 function mtCodigo(grupo,local,i){ const m=String(local).match(/(\d+)/); let pre; if(grupo==='Terminais') pre='T'+(m?m[1]:''); else if(grupo==='Estações') pre='E'+(m?m[1]:''); else pre=String(local).split(/[\s(—]/)[0].slice(0,7).toUpperCase(); return pre+'-'+String(i).padStart(2,'0'); }
 function gruposDoMapa(){ const ativos=(D.mapa||[]).filter(l=>l.ativo!==false).sort((a,b)=>((a.ordem||0)-(b.ordem||0))||((a.id||0)-(b.id||0))); const g=[],pos={};
   ativos.forEach(l=>{ if(!(l.grupo in pos)){ pos[l.grupo]=g.length; g.push({grupo:l.grupo,tipo:l.tipo||'',locais:[]}); } g[pos[l.grupo]].locais.push({nome:l.local,qtd:l.qtd||1}); }); return g; }
-function mtMontar(){ const items=D.os, abertas=items.filter(x=>x.status!=='concluida'&&!x.arquivada);
+function doMesAtual(x){ if(!x||!x.dataAbertura) return false; const d=new Date(x.dataAbertura), a=new Date(); return d.getFullYear()===a.getFullYear()&&d.getMonth()===a.getMonth(); }
+function mtMontar(){ const items=D.os.filter(doMesAtual), abertas=items.filter(x=>x.status!=='concluida'&&!x.arquivada);
   return gruposDoMapa().map(g=>({grupo:g.grupo,tipo:g.tipo,locais:g.locais.map(loc=>{
-    const naVist=os=>(os.vistoriaLocais||[]).some(L=>mtMesmoLocal(loc.nome,L));
-    const doLocal=abertas.filter(os=>mtMesmoLocal(loc.nome,os.local)||naVist(os)); const jaTeve=items.some(os=>mtMesmoLocal(loc.nome,os.local)||naVist(os));
+    const bate=L=>mtMesmoLocal(loc.nome,L)||mtMesmoLocal(g.grupo+' '+loc.nome,L); const naVist=os=>(os.vistoriaLocais||[]).some(bate);
+    const doLocal=abertas.filter(os=>bate(os.local)||naVist(os)); const jaTeve=items.some(os=>bate(os.local)||naVist(os));
     const ehVisita=os=>os.acao==='visita'; const semCod=doLocal.filter(os=>!os.telaCodigo); const osNum={}, vistNum={}; let osGen=null, vistGen=null;
     semCod.forEach(os=>{ const ns=mtNumerosTelaNoTexto(os); if(ehVisita(os)){ if(ns.length) ns.forEach(n=>{ if(!vistNum[n]) vistNum[n]=os; }); else if(!vistGen) vistGen=os; } else { if(ns.length) ns.forEach(n=>{ if(!osNum[n]) osNum[n]=os; }); else if(!osGen) osGen=os; } });
     const telas=[]; for(let i=1;i<=(loc.qtd||0);i++){ const cod=mtCodigo(g.grupo,loc.nome,i); const bruta=doLocal.find(os=>(os.telaCodigo||'')===cod);
@@ -204,7 +205,7 @@ function pintaMapa(){
   const G=mtMontar(); let nP=0,nV=0,nT=0,nPd=0;
   $('mapaGrupos').innerHTML=G.map(g=>{ let tot=0; const locs=g.locais.map(l=>{ tot+=l.telas.length; return '<div class="loc"><em>'+esc(l.nome)+'</em><div class="tl">'+l.telas.map(t=>{ const e=estadoTV(t.status); nT++; if(e==='prob') nP++; else if(e==='vist') nV++; else if(e==='pend') nPd++; return '<div class="t '+(e==='ok'?'':e)+'" title="'+esc(t.codigo)+'"></div>'; }).join('')+'</div></div>'; }).join('');
     return '<div class="grp"><h4>'+esc(g.grupo)+' <small>· '+tot+' telas</small></h4><div class="locs">'+locs+'</div></div>'; }).join('')||'<div class="vazio">O Mapa de Telas ainda não tem locais cadastrados.</div>';
-  $('mapaLeg').innerHTML='<div><i style="background:var(--mag)"></i><b>'+nP+'</b> com problema</div><div><i style="background:var(--azul)"></i><b>'+nV+'</b> em vistoria</div><div><i style="background:var(--verde)"></i><b>'+(nT-nP-nV-nPd)+'</b> sem OS aberta</div><div><i style="background:#4A4256"></i><b>'+nPd+'</b> sem histórico</div><div><b>'+nT+'</b> telas</div>';
+  $('mapaLeg').innerHTML='<div><i style="background:var(--mag)"></i><b>'+nP+'</b> com problema</div><div><i style="background:var(--azul)"></i><b>'+nV+'</b> em vistoria</div><div><i style="background:var(--verde)"></i><b>'+(nT-nP-nV-nPd)+'</b> OS do mês resolvida</div><div><i style="background:#4A4256"></i><b>'+nPd+'</b> sem OS no mês</div><div><b>'+nT+'</b> telas</div>';
 }
 function rosca(fatias,total,rotulo){ rotulo=rotulo||'OS no mês'; const R=130,r=82,cx=150,cy=150; if(!total) return '<svg width="300" height="300"><circle cx="150" cy="150" r="106" fill="none" stroke="#2E2639" stroke-width="48"/><text x="150" y="160" text-anchor="middle" font-size="30" fill="#857C93">sem dados</text></svg>';
   let a=-Math.PI/2; const arcos=fatias.filter(f=>f.v>0).map(f=>{ const ang=f.v/total*Math.PI*2, a2=a+ang; const big=ang>Math.PI?1:0;
@@ -225,9 +226,9 @@ function pintaOS(){
   let nE=0,nV=0; doMes.filter(x=>x.status==='concluida'&&x.encerradoPor).forEach(x=>{ if(String(x.encerradoPor).toLowerCase().indexOf('pacheco')>=0) nE++; else nV++; });
   const FV=[{n:'VTM',v:nV,c:'#2FBF8F'},{n:'EPX',v:nE,c:'#F7962C'}];
   $('osRoscaVE').innerHTML=rosca(FV,nV+nE,'encerradas')+'<div class="lg">'+FV.map(f=>'<div><i style="background:'+f.c+'"></i>'+f.n+'<b>'+f.v+'</b></div>').join('')+'</div>';
-  const ab=D.os.filter(x=>x.status!=='concluida'&&!x.arquivada).sort((a,b)=>(a.dataAbertura||0)-(b.dataAbertura||0)).slice(0,8);
+  const ab=D.os.filter(x=>x.status!=='concluida'&&!x.arquivada&&doMesAtual(x)).sort((a,b)=>(a.dataAbertura||0)-(b.dataAbertura||0)).slice(0,8);
   $('osLista').innerHTML=ab.length?ab.map(x=>{ const dias=Math.floor(tempoUtil(x)/864e5); const at=estaAtrasada(x), pc=aguardandoPeca(x);
-    return '<div class="lin"><span>'+esc(x.code||'OS')+' · '+esc(x.local||'')+'</span><span style="color:'+(at?'#F7962C':pc?'#9B8AFB':'#B3AABF')+'">'+(pc?'aguardando material':(dias+(dias===1?' dia':' dias')))+(x.tecnico?' · '+esc(x.tecnico):'')+'</span></div>'; }).join(''):'<div class="vazio">Nenhuma OS aberta.</div>';
+    return '<div class="lin"><span>'+esc(x.code||'OS')+' · '+esc(x.local||'')+'</span><span style="color:'+(at?'#F7962C':pc?'#9B8AFB':'#B3AABF')+'">'+(pc?'aguardando material':(dias+(dias===1?' dia':' dias')))+(x.tecnico?' · '+esc(x.tecnico):'')+'</span></div>'; }).join(''):'<div class="vazio">Nenhuma OS em aberto neste mês.</div>';
 }
 function barras(cont,el){ const L=Object.entries(cont).sort((a,b)=>b[1]-a[1]).slice(0,8), mx=L.length?L[0][1]:1;
   $(el).innerHTML=L.length?L.map(([k,v])=>'<div class="barra"><span>'+esc(k)+'</span><div><i style="width:'+Math.round(v/mx*100)+'%"></i></div><b>'+v+'</b></div>').join(''):'<div class="vazio">Sem bens cadastrados.</div>'; }
