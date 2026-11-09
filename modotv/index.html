@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0E0B13">
+<title>Modo TV · VTM</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icone-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com/">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{--fundo:#0E0B13;--painel:#1A1522;--painel2:#221C2C;--linha:#2E2639;--ink:#F3EFF7;--ink2:#B3AABF;--ink3:#857C93;
+  --mag:#E0187B;--lar:#F58220;--azul:#2FA4E7;--roxo:#9B8AFB;--verde:#2FBF8F;--amar:#F2A93B}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--fundo);color:var(--ink);font-family:'DM Sans',system-ui,Arial,sans-serif;overflow:hidden;cursor:none}
+#palco{position:absolute;left:50%;top:50%;width:1920px;height:1080px;transform-origin:center;transform:translate(-50%,-50%)}
+.topo{position:absolute;left:0;top:0;width:1920px;height:110px;display:flex;align-items:center;gap:24px;padding:0 56px;border-bottom:1px solid var(--linha)}
+.marca{display:flex;align-items:flex-end;gap:6px;height:44px}.marca i{display:block;width:12px;border-radius:4px;background:linear-gradient(180deg,var(--lar),var(--mag))}
+.topo h1{font-family:Archivo,Arial;font-weight:800;font-size:40px;margin:0}
+.topo .sub{font-size:24px;color:var(--ink2)}
+.topo .esp{flex:1}
+.hora{font-family:Archivo;font-size:52px;font-weight:700;font-variant-numeric:tabular-nums}
+.at{font-size:20px;color:var(--ink3);text-align:right;line-height:1.2}
+.pontos{position:absolute;left:0;bottom:0;width:1920px;height:56px;display:flex;align-items:center;justify-content:center;gap:16px}
+.pontos span{display:flex;align-items:center;gap:10px;font-size:20px;color:var(--ink3)}
+.pontos span i{display:block;width:44px;height:6px;border-radius:3px;background:var(--linha);overflow:hidden;position:relative}
+.pontos span.on{color:var(--ink)}
+.pontos span.on i b{position:absolute;left:0;top:0;bottom:0;background:var(--mag);width:0}
+.tela{position:absolute;left:56px;top:140px;width:1808px;height:860px;opacity:0;transition:opacity .6s;pointer-events:none}
+.tela.on{opacity:1}
+h2{font-family:Archivo;font-weight:800;font-size:44px;margin:0 0 22px}
+h2 small{font-family:'DM Sans';font-weight:500;font-size:24px;color:var(--ink2);margin-left:10px}
+.kpis{display:grid;grid-template-columns:repeat(6,1fr);gap:20px}
+.kpi{background:var(--painel);border-radius:20px;padding:24px 26px;border-top:6px solid var(--c)}
+.kpi b{display:block;font-family:Archivo;font-weight:800;font-size:64px;line-height:1.05;color:var(--c);font-variant-numeric:tabular-nums}
+.kpi.din b{font-size:42px;line-height:1.5}
+.kpi small{font-size:22px;color:var(--ink2)}
+.cols{display:grid;gap:24px;margin-top:26px}
+.caixa{background:var(--painel);border-radius:20px;padding:24px 28px;overflow:hidden}
+.caixa h3{font-size:26px;margin:0 0 14px;color:var(--ink2);font-weight:700}
+.lin{display:flex;justify-content:space-between;gap:16px;padding:12px 0;border-top:1px solid var(--linha);font-size:25px}
+.lin:first-of-type{border-top:0}
+.lin span:last-child{color:var(--ink2);white-space:nowrap}
+.vazio{font-size:24px;color:var(--ink3);padding:10px 0}
+/* mapa de telas */
+.mapa{display:flex;flex-wrap:wrap;gap:18px;align-content:flex-start}
+.grp{background:var(--painel);border-radius:18px;padding:16px 18px;max-width:100%}
+.grp h4{margin:0 0 12px;font-size:28px;color:var(--ink2)}
+.grp h4 small{color:var(--ink3);font-weight:500}
+.locs{display:flex;flex-wrap:wrap;gap:10px 18px}
+.loc{display:flex;align-items:center;gap:8px}
+.loc em{font-style:normal;font-size:22px;color:var(--ink3);max-width:220px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tl{display:flex;gap:4px;flex-wrap:wrap}
+.t{width:38px;height:38px;border-radius:8px;background:var(--verde)}
+.t.prob{background:var(--mag);box-shadow:0 0 0 3px rgba(224,24,123,.35)}
+.t.vist{background:var(--azul)}
+.t.pend{background:#4A4256}
+.leg{display:flex;gap:28px;margin-bottom:18px}
+.leg div{display:flex;align-items:center;gap:12px;font-size:24px;color:var(--ink2)}
+.leg b{font-family:Archivo;font-size:40px;color:var(--ink)}
+.leg i{display:block;width:24px;height:24px;border-radius:6px}
+/* andamento */
+.big5{display:grid;grid-template-columns:repeat(5,1fr);gap:20px}
+.rosca{display:flex;align-items:center;gap:22px}
+.rosca .lg div{display:flex;align-items:center;gap:12px;font-size:22px;margin:8px 0;white-space:nowrap}
+.rosca .lg i{display:block;width:18px;height:18px;border-radius:4px}
+.rosca .lg b{margin-left:auto;padding-left:18px;font-family:Archivo}
+.barra{display:flex;align-items:center;gap:16px;margin:14px 0;font-size:24px}
+.barra span:first-child{width:300px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.barra div{flex:1;height:26px;background:var(--painel2);border-radius:8px;overflow:hidden}
+.barra div i{display:block;height:100%;background:var(--lar);border-radius:8px}
+.barra b{width:80px;text-align:right;font-family:Archivo}
+/* login */
+#entrar{position:fixed;inset:0;background:var(--fundo);display:none;align-items:center;justify-content:center;cursor:auto;z-index:9}
+#entrar.on{display:flex}
+#entrar form{width:640px;background:var(--painel);border-radius:24px;padding:44px}
+#entrar h2{font-size:40px}
+#entrar p{font-size:22px;color:var(--ink2);margin:0 0 24px}
+#entrar label{display:block;font-size:20px;color:var(--ink2);margin:16px 0 8px}
+#entrar input{width:100%;font-size:28px;padding:16px;border-radius:14px;border:2px solid var(--linha);background:var(--painel2);color:var(--ink)}
+#entrar input:focus,#entrar button:focus{outline:4px solid var(--lar)}
+#entrar button{margin-top:26px;width:100%;font-size:28px;font-weight:800;padding:18px;border:0;border-radius:14px;background:var(--mag);color:#fff}
+#eAviso{color:#FF8FB1;font-size:22px;min-height:28px;margin-top:12px}
+#pausa{position:absolute;right:56px;bottom:66px;font-size:20px;color:var(--amar);display:none}
+</style>
+</head>
+<body>
+<div id="palco">
+  <div class="topo">
+    <div class="marca"><i style="height:16px"></i><i style="height:26px"></i><i style="height:35px"></i><i style="height:44px"></i></div>
+    <div><h1 id="titulo">Andamento das OS</h1><div class="sub" id="subt">Modo TV</div></div>
+    <div class="esp"></div>
+    <div class="at" id="at">conectando…</div>
+    <div class="hora" id="hora">--:--</div>
+  </div>
+
+  
+
+  
+
+  <section class="tela" id="t-almox" data-nome="Almoxarifado">
+    <div class="kpis" id="almoxKpis"></div>
+    <div class="cols" style="grid-template-columns:1fr 1fr">
+      <div class="caixa"><h3>Quem pediu material</h3><div id="almoxPedidos"></div></div>
+      <div class="caixa"><h3>Zerados · precisa comprar</h3><div id="almoxZerados"></div></div>
+    </div>
+  </section>
+
+  <section class="tela" id="t-mapa" data-nome="Mapa de Telas">
+    <div class="leg" id="mapaLeg"></div>
+    <div class="mapa" id="mapaGrupos"></div>
+  </section>
+
+  <section class="tela" id="t-os" data-nome="Andamento das OS">
+    <div class="big5" id="osNums"></div>
+    <div class="cols" style="grid-template-columns:1120px 1fr">
+      <div class="caixa"><div style="display:grid;grid-template-columns:1fr 1fr;gap:20px"><div><h3 id="osMesTit">Situação do mês</h3><div class="rosca" id="osRosca"></div></div><div><h3>Atendimentos VTM × EPX</h3><div class="rosca" id="osRoscaVE"></div></div></div></div>
+      <div class="caixa"><h3>OS abertas há mais tempo</h3><div id="osLista"></div></div>
+    </div>
+  </section>
+
+  
+
+  
+  <div class="pontos" id="pontos" style="display:none"></div>
+</div>
+
+
+
+<script>
+(function(){
+/* qual quadro: o começo do link (#os, #mapa ou #estoque) */
+const QUADROS={os:{sec:'t-os',tit:'Andamento das OS',sub:'Painel de OS'},mapa:{sec:'t-mapa',tit:'Mapa de Telas',sub:'Painel de OS'},estoque:{sec:'t-almox',tit:'Controle de Estoque',sub:'Almoxarifado'}};
+const QUADRO=(((location.hash||'').replace(/^#/,'').split('&')[0]||'os').toLowerCase());
+const QD=QUADROS[QUADRO]||QUADROS.os;
+document.querySelectorAll('.tela').forEach(t=>{ if(t.id!==QD.sec) t.remove(); });
+document.getElementById('titulo').textContent=QD.tit; document.title=QD.tit+' · Modo TV';
+addEventListener('hashchange',()=>location.reload());
+const SB_URL='https://xqeyhsuoinayuwydyesu.supabase.co';
+const SB_ANON='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhxZXloc3VvaW5heXV3eWR5ZXN1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI2ODM2NjAsImV4cCI6MjEwODI1OTY2MH0.qI3ExHVnS4gudCM4U4JSuPidzJUSVKneOcydoSLoMLw';
+const K_AUTH='tv-os:auth', GIRO=30000, ATUALIZA=60000;
+const $=id=>document.getElementById(id);
+const esc=t=>String(t==null?'':t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const brl=v=>'R$ '+Number(v||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+const num=v=>{ if(typeof v==='number') return v; const t=String(v==null?'':v).trim(); if(!t) return 0; const x=Number(t.indexOf(',')>=0?t.replace(/\./g,'').replace(',','.'):t); return isNaN(x)?0:x; };
+const p2=n=>String(n).padStart(2,'0');
+
+/* ---------- escala: o palco de 1920×1080 cabe em qualquer TV ---------- */
+function escala(){ const s=Math.min(innerWidth/1920,innerHeight/1080); $('palco').style.transform='translate(-50%,-50%) scale('+s+')'; }
+addEventListener('resize',escala); escala();
+setInterval(()=>{ const d=new Date(); $('hora').textContent=p2(d.getHours())+':'+p2(d.getMinutes()); },1000);
+
+async function tudo(caminho){ const L=[]; for(let de=0;;de+=1000){ const r=await fetch(SB_URL+'/rest/v1/'+caminho,{headers:{apikey:SB_ANON,Authorization:'Bearer '+await token(),Range:de+'-'+(de+999)}});
+  if(r.status===401) throw new Error('login expirou'); if(!r.ok) throw new Error(caminho.split('?')[0]+' '+r.status); const lote=await r.json(); L.push(...lote); if(lote.length<1000) break; } return L; }
+const pega=async c=>{ try{ return await tudo(c); }catch(e){ if(/login/.test(e.message)) throw e; return null; } };
+
+/* ---------- dados ---------- */
+/* sem login: a chave vem no próprio link (…/tv#chave=XXXX-XXXX-XXXX) */
+const CHAVE=decodeURIComponent(((location.hash||'').match(/chave=([^&]+)/i)||[])[1]||'').trim();
+function avisoTela(t){ let a=document.getElementById('avisoTela'); if(!a){ a=document.createElement('div'); a.id='avisoTela'; a.style.cssText='position:absolute;left:56px;right:56px;top:420px;text-align:center;font-size:40px;font-weight:700;color:#F2A93B'; $('palco').appendChild(a); } a.textContent=t; a.style.display=t?'block':'none'; }
+async function rpc(fn){ const r=await fetch(SB_URL+'/rest/v1/rpc/'+fn,{method:'POST',headers:{apikey:SB_ANON,Authorization:'Bearer '+SB_ANON,'Content-Type':'application/json'},body:JSON.stringify({p_chave:CHAVE})});
+  if(r.status===401||r.status===403) throw new Error('chave'); if(!r.ok) throw new Error(fn+' '+r.status); return r.json(); }
+let D={mats:[],movs:[],trocas:[],os:[],mapa:[],bens:[],pend:0};
+async function carregar(){
+  if(!CHAVE){ avisoTela('Falta a chave no link desta TV.'); return; }
+  try{
+    if(document.getElementById('t-os')||document.getElementById('t-mapa')){ const os=await rpc('tv_os'); if(Array.isArray(os)) D.os=os.map(itemOS); }
+    if(document.getElementById('t-mapa')){ const m=await rpc('tv_mapa'); if(Array.isArray(m)) D.mapa=m; }
+    if(document.getElementById('t-almox')){ const e=await rpc('tv_estoque')||{}; D.mats=e.mats||[]; D.movs=e.movs||[]; D.trocas=e.trocas||[]; }
+    avisoTela(''); const d=new Date(); $('at').innerHTML='atualizado<br>'+p2(d.getHours())+':'+p2(d.getMinutes());
+    pintaTudo();
+  }catch(e){ if(e.message==='chave') avisoTela('A chave do link desta TV não vale mais. Peça o link novo.'); else $('at').textContent='sem conexão · tentando de novo'; }
+}
+const ts=v=>v?(typeof v==='number'?v:Date.parse(v)||null):null;
+const arr=v=>Array.isArray(v)?v:(v?String(v).split(/[;,\n]/).map(x=>x.trim()).filter(Boolean):[]);
+function itemOS(r){ return {code:r.codigo,acao:r.acao,local:r.local,tipo:r.tipo,status:r.status,tecnico:r.tecnico,encerradoPor:r.encerrado_por,
+  dataAbertura:ts(r.data_abertura),dataConclusao:ts(r.data_conclusao),pausaInicio:ts(r.pausa_inicio),tempoPausado:Number(r.tempo_pausado_ms)||0,
+  compraMaterial:!!r.compra_material,materialEntregue:!!r.material_entregue,diagnostico:r.diagnostico,arquivada:!!r.arquivada,telaCodigo:r.tela_codigo,vistoriaLocais:arr(r.vistoria_locais)}; }
+
+/* ---------- regras do Painel de OS (as mesmas do painel) ---------- */
+const PRAZO_MS=3*24*60*60*1000;
+function aguardandoPeca(x){ if(!x||x.status==='concluida') return false; if(x.materialEntregue) return false; return !!x.compraMaterial; }
+function tempoPausado(x){ let p=x.tempoPausado||0; if(x.pausaInicio) p+=Date.now()-x.pausaInicio; return p; }
+function tempoUtil(x){ if(!x||!x.dataAbertura) return 0; const fim=x.dataConclusao||Date.now(); return Math.max(0,(fim-x.dataAbertura)-tempoPausado(x)); }
+function estaAtrasada(x){ if(!x||x.status==='concluida') return false; if(aguardandoPeca(x)) return false; return tempoUtil(x)>PRAZO_MS; }
+function resumoOS(b){ return { emitidas:b.length, realizadas:b.filter(x=>x.status==='concluida').length, atrasadas:b.filter(estaAtrasada).length, aguardando:b.filter(aguardandoPeca).length,
+  andamento:b.filter(x=>x.status==='andamento'&&!estaAtrasada(x)&&!aguardandoPeca(x)).length, abertas:b.filter(x=>x.status==='aberta'&&!estaAtrasada(x)&&!aguardandoPeca(x)).length }; }
+function mtMesmoLocal(nomeLocal,localOS){ if(!localOS) return false; const norm=s=>String(s).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,' ').trim();
+  const a=norm(nomeLocal),b=norm(localOS); if(!a||!b) return false; if(a===b) return true; const pp=(t,al)=>t===al||t.startsWith(al+' '); return pp(b,a)||pp(a,b); }
+function mtNumerosTelaNoTexto(os){ const txt=((os.tipo||'')+' '+(os.diagnostico||'')+' '+(os.local||'')).toLowerCase(); if(!/tela/.test(txt)) return [];
+  const nums=[], re=/telas?\s*n?º?\s*([0-9º°]+(?:\s*(?:,|e|\s)\s*[0-9º°]+)*)/g; let m; while((m=re.exec(txt))!==null){ (m[1].match(/\d{1,3}/g)||[]).forEach(n=>nums.push(parseInt(n,10))); } return [...new Set(nums)]; }
+function mtCodigo(grupo,local,i){ const m=String(local).match(/(\d+)/); let pre; if(grupo==='Terminais') pre='T'+(m?m[1]:''); else if(grupo==='Estações') pre='E'+(m?m[1]:''); else pre=String(local).split(/[\s(—]/)[0].slice(0,7).toUpperCase(); return pre+'-'+String(i).padStart(2,'0'); }
+function gruposDoMapa(){ const ativos=(D.mapa||[]).filter(l=>l.ativo!==false).sort((a,b)=>((a.ordem||0)-(b.ordem||0))||((a.id||0)-(b.id||0))); const g=[],pos={};
+  ativos.forEach(l=>{ if(!(l.grupo in pos)){ pos[l.grupo]=g.length; g.push({grupo:l.grupo,tipo:l.tipo||'',locais:[]}); } g[pos[l.grupo]].locais.push({nome:l.local,qtd:l.qtd||1}); }); return g; }
+function mtMontar(){ const items=D.os, abertas=items.filter(x=>x.status!=='concluida'&&!x.arquivada);
+  return gruposDoMapa().map(g=>({grupo:g.grupo,tipo:g.tipo,locais:g.locais.map(loc=>{
+    const naVist=os=>(os.vistoriaLocais||[]).some(L=>mtMesmoLocal(loc.nome,L));
+    const doLocal=abertas.filter(os=>mtMesmoLocal(loc.nome,os.local)||naVist(os)); const jaTeve=items.some(os=>mtMesmoLocal(loc.nome,os.local)||naVist(os));
+    const ehVisita=os=>os.acao==='visita'; const semCod=doLocal.filter(os=>!os.telaCodigo); const osNum={}, vistNum={}; let osGen=null, vistGen=null;
+    semCod.forEach(os=>{ const ns=mtNumerosTelaNoTexto(os); if(ehVisita(os)){ if(ns.length) ns.forEach(n=>{ if(!vistNum[n]) vistNum[n]=os; }); else if(!vistGen) vistGen=os; } else { if(ns.length) ns.forEach(n=>{ if(!osNum[n]) osNum[n]=os; }); else if(!osGen) osGen=os; } });
+    const telas=[]; for(let i=1;i<=(loc.qtd||0);i++){ const cod=mtCodigo(g.grupo,loc.nome,i); const bruta=doLocal.find(os=>(os.telaCodigo||'')===cod);
+      const osT=(bruta&&!ehVisita(bruta))?bruta:null, vT=(bruta&&ehVisita(bruta))?bruta:null; let st;
+      if(osT) st='nc'; else if(osNum[i]) st='nc'; else if(osGen) st='local'; else if(vT) st='vistoria'; else if(vistNum[i]) st='vistoria'; else if(vistGen) st='vistoria'; else if(jaTeve) st='ok'; else st='pend';
+      telas.push({num:i,codigo:cod,status:st}); }
+    return {nome:loc.nome,telas}; })})); }
+const estadoTV=st=>(st==='nc'||st==='local')?'prob':(st==='vistoria'?'vist':(st==='pend'?'pend':'ok'));
+
+/* ---------- regras do Controle de Estoque ---------- */
+function saldos(){ const s={}; (D.movs||[]).forEach(v=>{ if(v.tipo==='saida'&&v.pendente) return; const q=num(v.qtd); s[v.material_id]=(s[v.material_id]||0)+(v.tipo==='saida'?-q:q); }); return s; }
+
+/* ---------- telas ---------- */
+function kpi(rot,v,cor,din){ return '<div class="kpi'+(din?' din':'')+'" style="--c:'+cor+'"><b>'+(din?brl(v):Number(v).toLocaleString('pt-BR'))+'</b><small>'+esc(rot)+'</small></div>'; }
+function pintaAlmox(){
+  const s=saldos(), mats=D.mats||[]; const z=[],b=[]; let valor=0;
+  mats.forEach(m=>{ const q=s[m.id]||0, mn=num(m.minimo); valor+=Math.max(0,q)*num(m.preco); if(q<=0) z.push(m); else if(mn>0&&q<mn) b.push(m); });
+  const hoje=new Date(), mes=hoje.getFullYear()+'-'+p2(hoje.getMonth()+1); const doMes=t=>(D.movs||[]).filter(v=>v.tipo===t&&String(v.data||'').slice(0,7)===mes).length;
+  $('almoxKpis').innerHTML=kpi('Produtos',mats.length,'#5BC0DE')+kpi('Abaixo do mínimo',b.length,'#F2A93B')+kpi('Zerados',z.length,'#E0187B')+kpi('Entradas no mês',doMes('entrada'),'#5BC0DE')+kpi('Saídas no mês',doMes('saida'),'#EE6B57')+kpi('Valor em estoque',valor,'#A87BB8',true);
+  const P=(D.trocas||[]).slice().sort((a,c)=>String(a.quando||'').localeCompare(String(c.quando||''))).slice(0,9);
+  $('almoxPedidos').innerHTML=P.length?P.map(t=>'<div class="lin"><span>'+esc(t.quem||'—')+(t.os?' · '+esc(t.os):'')+'</span><span>'+esc(t.onde||'')+'</span></div>').join(''):'<div class="vazio">Ninguém esperando material agora.</div>';
+  $('almoxZerados').innerHTML=z.length?z.slice(0,9).map(m=>'<div class="lin"><span>'+esc(m.nome)+'</span><span>mín. '+esc(m.minimo||0)+' '+esc(m.unidade||'')+'</span></div>').join('')+(z.length>9?'<div class="vazio">e mais '+(z.length-9)+'…</div>':''):'<div class="vazio">Nenhum produto zerado.</div>';
+}
+function pintaMapa(){
+  const G=mtMontar(); let nP=0,nV=0,nT=0,nPd=0;
+  $('mapaGrupos').innerHTML=G.map(g=>{ let tot=0; const locs=g.locais.map(l=>{ tot+=l.telas.length; return '<div class="loc"><em>'+esc(l.nome)+'</em><div class="tl">'+l.telas.map(t=>{ const e=estadoTV(t.status); nT++; if(e==='prob') nP++; else if(e==='vist') nV++; else if(e==='pend') nPd++; return '<div class="t '+(e==='ok'?'':e)+'" title="'+esc(t.codigo)+'"></div>'; }).join('')+'</div></div>'; }).join('');
+    return '<div class="grp"><h4>'+esc(g.grupo)+' <small>· '+tot+' telas</small></h4><div class="locs">'+locs+'</div></div>'; }).join('')||'<div class="vazio">O Mapa de Telas ainda não tem locais cadastrados.</div>';
+  $('mapaLeg').innerHTML='<div><i style="background:var(--mag)"></i><b>'+nP+'</b> com problema</div><div><i style="background:var(--azul)"></i><b>'+nV+'</b> em vistoria</div><div><i style="background:var(--verde)"></i><b>'+(nT-nP-nV-nPd)+'</b> sem OS aberta</div><div><i style="background:#4A4256"></i><b>'+nPd+'</b> sem histórico</div><div><b>'+nT+'</b> telas</div>';
+}
+function rosca(fatias,total,rotulo){ rotulo=rotulo||'OS no mês'; const R=130,r=82,cx=150,cy=150; if(!total) return '<svg width="300" height="300"><circle cx="150" cy="150" r="106" fill="none" stroke="#2E2639" stroke-width="48"/><text x="150" y="160" text-anchor="middle" font-size="30" fill="#857C93">sem dados</text></svg>';
+  let a=-Math.PI/2; const arcos=fatias.filter(f=>f.v>0).map(f=>{ const ang=f.v/total*Math.PI*2, a2=a+ang; const big=ang>Math.PI?1:0;
+    const pt=(rr,an)=>(cx+rr*Math.cos(an)).toFixed(1)+' '+(cy+rr*Math.sin(an)).toFixed(1);
+    const d=ang>=Math.PI*2-1e-6?'M '+pt(R,0)+' A '+R+' '+R+' 0 1 1 '+pt(R,Math.PI)+' A '+R+' '+R+' 0 1 1 '+pt(R,0)+' M '+pt(r,0)+' A '+r+' '+r+' 0 1 0 '+pt(r,Math.PI)+' A '+r+' '+r+' 0 1 0 '+pt(r,0)
+      :'M '+pt(R,a)+' A '+R+' '+R+' 0 '+big+' 1 '+pt(R,a2)+' L '+pt(r,a2)+' A '+r+' '+r+' 0 '+big+' 0 '+pt(r,a)+' Z'; a=a2; return '<path d="'+d+'" fill="'+f.c+'" fill-rule="evenodd"/>'; }).join('');
+  return '<svg width="300" height="300" viewBox="0 0 300 300">'+arcos+'<text x="150" y="158" text-anchor="middle" font-size="58" font-weight="800" fill="#F3EFF7" font-family="Archivo">'+total+'</text><text x="150" y="192" text-anchor="middle" font-size="20" fill="#B3AABF">'+rotulo+'</text></svg>'; }
+function pintaOS(){
+  const ag=new Date(), MES=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+  const doMes=D.os.filter(x=>{ if(!x.dataAbertura) return false; const d=new Date(x.dataAbertura); return d.getFullYear()===ag.getFullYear()&&d.getMonth()===ag.getMonth(); });
+  const r=resumoOS(doMes);
+  const N=[['Abertas',r.abertas,'#E5397F'],['Em andamento',r.andamento,'#5B8DEF'],['Aguard. material',r.aguardando,'#9B8AFB'],['Atrasadas',r.atrasadas,'#F7962C'],['Encerradas',r.realizadas,'#2FBF8F']];
+  $('osNums').innerHTML=N.map(n=>kpi(n[0],n[1],n[2])).join('');
+  $('osMesTit').textContent='Situação de '+MES[ag.getMonth()];
+  const F=[{n:'Encerradas',v:r.realizadas,c:'#2FBF8F'},{n:'Em andamento',v:r.andamento,c:'#5B8DEF'},{n:'Atrasadas',v:r.atrasadas,c:'#F7962C'},{n:'Aguard. material',v:r.aguardando,c:'#9B8AFB'},{n:'Abertas',v:r.abertas,c:'#E5397F'}];
+  $('osRosca').innerHTML=rosca(F,r.emitidas)+'<div class="lg">'+F.map(f=>'<div><i style="background:'+f.c+'"></i>'+f.n+'<b>'+f.v+'</b></div>').join('')+'</div>';
+  /* VTM × EPX: OS encerradas no mês por quem encerrou (Pacheco = EPX, o resto = VTM), igual ao painel */
+  let nE=0,nV=0; doMes.filter(x=>x.status==='concluida'&&x.encerradoPor).forEach(x=>{ if(String(x.encerradoPor).toLowerCase().indexOf('pacheco')>=0) nE++; else nV++; });
+  const FV=[{n:'VTM',v:nV,c:'#2FBF8F'},{n:'EPX',v:nE,c:'#F7962C'}];
+  $('osRoscaVE').innerHTML=rosca(FV,nV+nE,'encerradas')+'<div class="lg">'+FV.map(f=>'<div><i style="background:'+f.c+'"></i>'+f.n+'<b>'+f.v+'</b></div>').join('')+'</div>';
+  const ab=D.os.filter(x=>x.status!=='concluida'&&!x.arquivada).sort((a,b)=>(a.dataAbertura||0)-(b.dataAbertura||0)).slice(0,8);
+  $('osLista').innerHTML=ab.length?ab.map(x=>{ const dias=Math.floor(tempoUtil(x)/864e5); const at=estaAtrasada(x), pc=aguardandoPeca(x);
+    return '<div class="lin"><span>'+esc(x.code||'OS')+' · '+esc(x.local||'')+'</span><span style="color:'+(at?'#F7962C':pc?'#9B8AFB':'#B3AABF')+'">'+(pc?'aguardando material':(dias+(dias===1?' dia':' dias')))+(x.tecnico?' · '+esc(x.tecnico):'')+'</span></div>'; }).join(''):'<div class="vazio">Nenhuma OS aberta.</div>';
+}
+function barras(cont,el){ const L=Object.entries(cont).sort((a,b)=>b[1]-a[1]).slice(0,8), mx=L.length?L[0][1]:1;
+  $(el).innerHTML=L.length?L.map(([k,v])=>'<div class="barra"><span>'+esc(k)+'</span><div><i style="width:'+Math.round(v/mx*100)+'%"></i></div><b>'+v+'</b></div>').join(''):'<div class="vazio">Sem bens cadastrados.</div>'; }
+function pintaPat(){
+  const B=D.bens||[], st=s=>B.filter(x=>String(x.status||'').toUpperCase()===s).length;
+  $('patKpis').innerHTML=kpi('Bens cadastrados',B.length,'#F58220')+kpi('Ativos',st('ATIVO'),'#2FBF8F')+kpi('Substituídos',st('SUBSTITUÍDO')+st('SUBSTITUIDO'),'#9B8AFB')+kpi('Para lançar',D.pend||0,'#E0187B');
+  const c={}, l={}; B.forEach(x=>{ const k=x.categoria||'Sem categoria'; c[k]=(c[k]||0)+1; const m=x.local||'Sem local'; l[m]=(l[m]||0)+1; });
+  barras(c,'patCat'); barras(l,'patLoc');
+}
+function pintaTudo(){ try{ pintaAlmox(); }catch(e){} try{ pintaMapa(); }catch(e){} try{ pintaOS(); }catch(e){} try{ pintaPat(); }catch(e){} }
+
+/* ---------- giro das telas (o controle remoto também funciona) ---------- */
+const TELAS=[...document.querySelectorAll('.tela')]; let atual=0, pausado=false, t0=Date.now();
+$('pontos').innerHTML=TELAS.map((t,i)=>'<span data-i="'+i+'"><i><b></b></i>'+esc(t.dataset.nome)+'</span>').join('');
+function vai(i){ atual=(i+TELAS.length)%TELAS.length; TELAS.forEach((t,k)=>t.classList.toggle('on',k===atual)); document.querySelectorAll('#pontos span').forEach((s,k)=>s.classList.toggle('on',k===atual));
+  $('subt').textContent=QD.sub; t0=Date.now(); }
+setInterval(()=>{ const b=document.querySelector('#pontos span.on b'); const f=pausado?0:Math.min(1,(Date.now()-t0)/GIRO); if(b) b.style.width=(f*100)+'%';  },200);
+addEventListener('keydown',e=>{
+  if(e.key==='ArrowRight') vai(atual+1); else if(e.key==='ArrowLeft') vai(atual-1);
+  else if(e.key==='Enter'||e.key===' '){ pausado=!pausado; $('pausa').style.display=pausado?'block':'none'; t0=Date.now(); } });
+vai(0); carregar(); setInterval(carregar,ATUALIZA);
+})();
+</script>
+</body>
+</html>
