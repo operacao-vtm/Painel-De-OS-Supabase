@@ -1819,6 +1819,7 @@
     </div>
     <button class="btn" id="btnTema" onclick="alternarTema()" title="Alternar entre tema claro e escuro" aria-label="Alternar tema"><span id="btnTemaIcone">🌙</span></button>
     <button class="btn primary" id="btnNovaOS" onclick="openModal()" style="display: inline-flex;">+ Nova OS</button>
+    <button class="btn primary" id="btnNovaComp" onclick="openModalComprovacao()" style="display:none;">📷 Abrir OS de comprovação</button>
     </div>
   </div>
 </header>
@@ -3897,6 +3898,10 @@ async function sbRestaurarSessao(){
 function usuarioEditaRota(){ return !!(currentUser && currentUser.editaRota); }
 function usuarioEncerraDireto(){ return !!(currentUser && currentUser.encerraDireto); }
 function usuarioAbreOsDireto(){ return !!(currentUser && currentUser.abreOsDireto); }
+// Comprovação que vai a campo (ex.: Dani): com "abre_os_direto" marcado, abre OS do tipo
+// comprovação e cuida dela como o técnico cuida da dele — registra fotos e pede o encerramento.
+function comprovacaoAbreOS(){ return !!(currentUser && currentUser.role === 'comprovacao' && usuarioAbreOsDireto()); }
+function comprovacaoNaSuaOS(item){ return !!(currentUser && currentUser.role === 'comprovacao' && item && item.acao === 'comprovacao' && item.criadoPor === currentUser.name); }
 
 
 let isModalOpen = false;
@@ -4655,6 +4660,7 @@ function updateModeUI(){
   document.getElementById('btnRotaFixa').style.display = isOperador ? 'inline-flex' : 'none';
   document.getElementById('btnRotasMotorista').style.display = isOperador ? 'inline-flex' : 'none';
   document.getElementById('btnCampanhas').style.display = podeVerCampanhas() ? 'inline-flex' : 'none';
+  document.getElementById('btnNovaComp').style.display = comprovacaoAbreOS() ? 'inline-flex' : 'none';
   atualizaBadgeSolicitacoes();
 }
 
@@ -4676,6 +4682,10 @@ function getEditPermission(item){
     if(!item) return 'full';
     if(item.criadoPor === currentUser.name) return 'limited';
     return 'none';
+  }
+  if(currentUser.role === 'comprovacao'){
+    if(!item) return comprovacaoAbreOS() ? 'full' : 'none';
+    return comprovacaoNaSuaOS(item) ? 'limited' : 'none';
   }
   return 'none'; // diretoria e observador: somente leitura
 }
@@ -5096,6 +5106,8 @@ function aplicaModoEdicao(){
     if(limited) el.disabled = !soDoTecnico.includes(fid);
     else el.disabled = soLeitura;
   });
+  // a comprovação só trabalha com OS de comprovação: o tipo fica sempre travado para ela
+  if(currentUser && currentUser.role === 'comprovacao'){ const fa = document.getElementById('fAcao'); if(fa) fa.disabled = true; }
   document.querySelectorAll('#fColabM input').forEach(c=>{ c.disabled = limited || soLeitura; });
   // v6.1: quem só observa não marca parcial, não cola link de vídeo e não envia ao Drive
   document.querySelectorAll('.overlay button[onclick="abrirDriveUpload()"]').forEach(b=>{ b.style.display = soLeitura ? 'none' : ''; });
@@ -5115,7 +5127,7 @@ function aplicaModoEdicao(){
 
   // técnico numa OS existente: registra o serviço (fotos + diagnóstico) e pede o
   // encerramento; quem fecha de fato é o administrador.
-  const tecnicoNaOS = it && currentUser && currentUser.role === 'tecnico';
+  const tecnicoNaOS = it && currentUser && (currentUser.role === 'tecnico' || comprovacaoNaSuaOS(it));
   // técnico da equipe de manutenção que encerra direto (ex.: Robert)
   const nomeAtual = (currentUser && currentUser.name || '').trim().toLowerCase();
   const encerraDireto = usuarioEncerraDireto();
@@ -5166,6 +5178,15 @@ function aplicaModoEdicao(){
   document.querySelector('.os-acoes').style.gridTemplateColumns = 'repeat(' + Math.max(1, visiveis) + ',1fr)';
 }
 
+function openModalComprovacao(){
+  if(!comprovacaoAbreOS()) return;
+  openModal();
+  const sel = document.getElementById('fAcao');
+  sel.value = 'comprovacao';
+  onAcaoChange();
+  sel.disabled = true;   // a comprovação só abre OS de comprovação
+}
+
 function openModal(id){
   if(!id && !currentUser) return;
   relatorioAvisado = false;
@@ -5191,7 +5212,7 @@ function openModal(id){
   const lockedInLimited = ['fLocal','fLocalSel','fAcao','fTipo','fPrioridadeM','fSolicitante','fTecnicoM','fEhCompra'];
   const alwaysStatusDiag = ['fStatus','fDiagnostico'];
 
-  const photosEditable = perm === 'full' || (currentUser && currentUser.role === 'tecnico');
+  const photosEditable = perm === 'full' || (currentUser && currentUser.role === 'tecnico') || comprovacaoNaSuaOS(item);
 
   if(id){
     const it = items.find(x=>x.id===id);
@@ -5622,7 +5643,7 @@ async function saveOS(){
   const nomeAtualSave = (currentUser && currentUser.name || '').trim().toLowerCase();
   const encerraDiretoSave = usuarioEncerraDireto();
   // Robert (equipe de manutenção) salva como um editor normal, podendo encerrar.
-  const souTecnicoEditando = editingId && !ehOperador() && currentUser && currentUser.role === 'tecnico' && !encerraDiretoSave;
+  const souTecnicoEditando = editingId && !ehOperador() && currentUser && (currentUser.role === 'tecnico' || comprovacaoNaSuaOS(items.find(x=>x.id===editingId))) && !encerraDiretoSave;
   if(editingId && !ehOperador() && !souTecnicoEditando && !encerraDiretoSave){
     askConfirm('Só o administrador altera uma OS já aberta.', ()=>{});
     return;
